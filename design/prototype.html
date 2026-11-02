@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tickd - Hybrid Prototype</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style type="text/tailwindcss">
+    @theme {
+      --color-bg: var(--theme-bg);
+      --color-surface: var(--theme-surface);
+      --color-sidebar: var(--theme-sidebar);
+      --color-card: var(--theme-card);
+      --color-card-hover: var(--theme-card-hover);
+      --color-text: var(--theme-text);
+      --color-text-muted: var(--theme-text-muted);
+      --color-accent: var(--theme-accent);
+      --color-accent-text: var(--theme-accent-text);
+      --color-danger: var(--theme-danger);
+      --color-border: var(--theme-border);
+      --color-border-ui: var(--theme-border-ui);
+      --color-ring: var(--theme-ring);
+
+      --font-soft: "Nunito", sans-serif;
+      
+      --radius-panel: 1.5rem;
+      --radius-card: 1rem;
+      --radius-pill: 9999px;
+    }
+
+    :root {
+      --theme-bg: #f5f4f1;
+      --theme-surface: #ffffff;
+      --theme-sidebar: #f5f4f1;
+      --theme-card: #ffffff;
+      --theme-card-hover: #faf9f7;
+      
+      --theme-text: #292524;
+      --theme-text-muted: #57534e;
+      
+      --theme-accent: #0f766e;
+      --theme-accent-text: #ffffff;
+      
+      --theme-danger: #c1121f;
+      
+      --theme-border: #e7e5e4;
+      --theme-border-ui: #78716c;
+      
+      --theme-ring: #0f766e;
+    }
+
+    .dark {
+      --theme-bg: #1c1917;
+      --theme-surface: #292524;
+      --theme-sidebar: #1c1917;
+      --theme-card: #292524;
+      --theme-card-hover: #34302d;
+      
+      --theme-text: #f5f5f4;
+      --theme-text-muted: #d6d3d1;
+      
+      --theme-accent: #2dd4bf;
+      --theme-accent-text: #042f2e;
+      
+      --theme-danger: #fb7185;
+      
+      --theme-border: #44403c;
+      --theme-border-ui: #a8a29e;
+      
+      --theme-ring: #2dd4bf;
+    }
+
+    @custom-variant dark (&:where(.dark, .dark *));
+
+    @media (max-width: 1023px) {
+      body.has-toast {
+        padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+      }
+    }
+  </style>
+</head>
+<body class="bg-bg text-text font-soft min-h-[100dvh] flex flex-col lg:flex-row lg:h-[100dvh] lg:overflow-hidden transition-colors duration-300">
+  
+  <aside id="controls" class="fixed top-4 right-4 flex flex-col gap-3 bg-surface p-4 rounded-card shadow-lg border border-border z-50 text-sm w-48 transition-colors">
+    <div class="font-bold text-accent mb-1 uppercase tracking-wider text-xs">Prototype Controls</div>
+    
+    <div class="flex flex-col gap-1">
+      <label for="state-toggle" class="text-text-muted font-semibold text-xs">State</label>
+      <select id="state-toggle" class="bg-bg border border-border-ui rounded px-2 py-1 text-text font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface">
+        <option value="empty">Empty</option>
+        <option value="populated">Populated</option>
+        <option value="error">Error</option>
+        <option value="editing">Editing</option>
+        <option value="toast">Toast</option>
+      </select>
+    </div>
+    
+    <div class="flex flex-col gap-1">
+      <label for="theme-toggle-select" class="text-text-muted font-semibold text-xs">Theme</label>
+      <select id="theme-toggle-select" class="bg-bg border border-border-ui rounded px-2 py-1 text-text font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="system">System</option>
+      </select>
+    </div>
+  </aside>
+
+  <!-- Mobile Header -->
+  <header class="lg:hidden flex items-center justify-between px-4 py-3 bg-bg shrink-0">
+    <h1 class="text-2xl font-extrabold tracking-tight text-accent">Tickd</h1>
+    <div role="group" aria-label="Theme" class="flex bg-surface border border-border p-0.5 rounded-pill shrink-0">
+      <button data-theme-btn="light" aria-pressed="true" aria-label="Light theme" class="flex items-center justify-center w-8 h-8 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[pressed=true]:bg-bg aria-[pressed=true]:text-text aria-[pressed=true]:shadow-sm text-text-muted hover:text-text">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+        </svg>
+      </button>
+      <button data-theme-btn="dark" aria-pressed="false" aria-label="Dark theme" class="flex items-center justify-center w-8 h-8 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[pressed=true]:bg-bg aria-[pressed=true]:text-text aria-[pressed=true]:shadow-sm text-text-muted hover:text-text">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+      <button data-theme-btn="system" aria-pressed="false" aria-label="System theme" class="flex items-center justify-center w-8 h-8 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[pressed=true]:bg-bg aria-[pressed=true]:text-text aria-[pressed=true]:shadow-sm text-text-muted hover:text-text">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M8 21h8M12 17v4"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Filters -->
+  <div class="lg:hidden px-4 pb-3 bg-bg shrink-0 w-full overflow-hidden">
+    <nav aria-label="Filter tasks" class="flex p-1 bg-bg rounded-pill border border-border shadow-inner w-full max-w-full">
+      <button data-filter="all" aria-current="page" class="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-pill font-bold transition-all motion-reduce:transition-none aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] truncate">All</button>
+      <button data-filter="active" class="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-pill font-bold transition-all motion-reduce:transition-none aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] truncate">Active</button>
+      <button data-filter="completed" class="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-pill font-bold transition-all motion-reduce:transition-none aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] truncate">Completed</button>
+    </nav>
+  </div>
+
+  <!-- Desktop Sidebar -->
+  <aside class="hidden lg:flex w-64 bg-sidebar border-r border-border flex-col shrink-0">
+    <div class="p-6 shrink-0">
+      <h1 class="text-3xl font-extrabold tracking-tight text-accent">Tickd</h1>
+    </div>
+    <div class="px-4 pb-2 text-xs font-bold text-text-muted uppercase tracking-wider">Tasks</div>
+    <nav aria-label="Filter tasks" class="flex-1 px-3 flex flex-col gap-1">
+      <button data-filter="all" aria-keyshortcuts="1" aria-current="page" class="sidebar-filter group flex items-center justify-between px-3 py-2 rounded-card font-bold transition-all motion-reduce:transition-none aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm text-text-muted hover:text-text hover:bg-surface/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]">
+        <span class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          </svg>
+          All
+        </span>
+        <div class="flex items-center relative">
+          <kbd class="hidden lg:inline-block absolute right-full mr-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm" aria-hidden="true">1</kbd>
+          <span class="count-all bg-border/50 text-text-muted px-2 py-0.5 rounded-pill text-xs">0</span>
+        </div>
+      </button>
+      <button data-filter="active" aria-keyshortcuts="2" class="sidebar-filter group flex items-center justify-between px-3 py-2 rounded-card font-bold transition-all motion-reduce:transition-none aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm text-text-muted hover:text-text hover:bg-surface/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]">
+        <span class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+          </svg>
+          Active
+        </span>
+        <div class="flex items-center relative">
+          <kbd class="hidden lg:inline-block absolute right-full mr-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm" aria-hidden="true">2</kbd>
+          <span class="count-active bg-border/50 text-text-muted px-2 py-0.5 rounded-pill text-xs">0</span>
+        </div>
+      </button>
+      <button data-filter="completed" aria-keyshortcuts="3" class="sidebar-filter group flex items-center justify-between px-3 py-2 rounded-card font-bold transition-all motion-reduce:transition-none aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm text-text-muted hover:text-text hover:bg-surface/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]">
+        <span class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M22 4L12 14.01l-3-3"></path>
+          </svg>
+          Completed
+        </span>
+        <div class="flex items-center relative">
+          <kbd class="hidden lg:inline-block absolute right-full mr-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm" aria-hidden="true">3</kbd>
+          <span class="count-completed bg-border/50 text-text-muted px-2 py-0.5 rounded-pill text-xs">0</span>
+        </div>
+      </button>
+    </nav>
+    <div class="p-4 border-t border-border shrink-0">
+      <div role="group" aria-label="Theme" class="flex bg-surface border border-border p-1 rounded-card w-full">
+        <button data-theme-btn="light" aria-pressed="true" class="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-[0.75rem] font-bold text-[11px] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[pressed=true]:bg-bg aria-[pressed=true]:text-text aria-[pressed=true]:shadow-sm text-text-muted hover:text-text">
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          Light
+        </button>
+        <button data-theme-btn="dark" aria-pressed="false" class="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-[0.75rem] font-bold text-[11px] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[pressed=true]:bg-bg aria-[pressed=true]:text-text aria-[pressed=true]:shadow-sm text-text-muted hover:text-text">
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          Dark
+        </button>
+        <button data-theme-btn="system" aria-pressed="false" class="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-[0.75rem] font-bold text-[11px] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[pressed=true]:bg-bg aria-[pressed=true]:text-text aria-[pressed=true]:shadow-sm text-text-muted hover:text-text">
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M8 21h8M12 17v4"></path>
+          </svg>
+          System
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Pane -->
+  <main class="flex-1 flex flex-col bg-bg lg:bg-surface relative lg:overflow-hidden">
+    <div class="flex-1 lg:overflow-y-auto flex flex-col items-center lg:items-start w-full lg:pl-16 xl:pl-24 lg:pr-8">
+      <div class="w-full max-w-[44rem] flex flex-col min-h-full px-4 lg:px-0 py-6 lg:py-10">
+        
+        <header class="mb-6 flex items-center justify-between">
+          <h2 id="view-title" class="text-2xl font-extrabold text-text">All tasks</h2>
+        </header>
+
+        <!-- Add Form -->
+        <form id="add-form" class="mb-6 relative" onsubmit="event.preventDefault()">
+          <label for="new-task" class="sr-only">Add a task</label>
+          <div class="relative flex items-center">
+            <input type="text" id="new-task" placeholder="Add a task..." aria-describedby="error-message"
+                   class="w-full bg-surface lg:bg-bg border-2 border-border-ui rounded-pill py-3 lg:py-3.5 pl-5 lg:pl-6 pr-20 lg:pr-28 text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent transition-all motion-reduce:transition-none font-medium" />
+            <div class="absolute right-24 mr-2 hidden lg:block">
+              <kbd class="font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm">N</kbd>
+            </div>
+            <button type="submit" class="absolute right-1.5 bg-accent text-accent-text hover:opacity-90 rounded-pill px-4 lg:px-5 py-2 lg:py-2.5 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface lg:focus-visible:ring-offset-bg transition-all motion-reduce:transition-none shadow-sm min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0">
+              Add
+            </button>
+          </div>
+          <div id="error-message" class="hidden text-danger text-sm font-bold mt-2 ml-4">
+            Task can't be empty
+          </div>
+        </form>
+
+        <!-- Task List Container -->
+        <div class="flex-1 flex flex-col relative">
+          
+          <div id="empty-state" class="hidden flex-col items-center justify-center text-center py-12 text-text-muted">
+            <svg class="w-16 h-16 mb-4 text-border-ui opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-xl font-bold text-text">All caught up!</p>
+            <p class="text-base font-medium mt-1 hidden lg:flex items-center justify-center gap-1">Press <kbd class="font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mx-1">N</kbd> to add a task.</p>
+            <p class="text-base font-medium mt-1 lg:hidden">Add your first task above.</p>
+          </div>
+          
+          <div id="no-match-state" class="hidden flex-col items-center justify-center text-center py-12 text-text-muted">
+            <p class="text-xl font-bold text-text">Nothing here</p>
+            <p class="text-base font-medium mt-1" id="no-match-message">No tasks match this filter.</p>
+          </div>
+
+          <ul id="task-list" class="flex flex-col gap-3 pb-8 lg:pb-0"></ul>
+
+          <!-- Desktop Footer -->
+          <footer id="desktop-footer" class="hidden lg:flex mt-4 pl-5 pr-2 justify-between items-center">
+            <span class="text-sm font-bold text-text-muted" id="desktop-items-count">0 items left</span>
+            <button id="desktop-clear-completed" class="text-sm font-bold text-text-muted hover:text-text disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface rounded px-2 py-1 transition-colors min-h-[44px]">Clear completed</button>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Footer -->
+    <footer id="mobile-footer" class="lg:hidden border-t border-border bg-surface px-4 py-4 flex justify-between items-center shrink-0 z-10 w-full">
+      <span class="text-sm font-bold text-text-muted" id="mobile-items-count">0 items left</span>
+      <button id="mobile-clear-completed" class="text-sm font-bold text-text-muted hover:text-text disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface rounded px-2 py-1 transition-colors min-h-[44px]">Clear completed</button>
+    </footer>
+
+    <!-- Toast -->
+    <div id="toast" role="status" class="hidden fixed lg:absolute bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] lg:bottom-8 left-1/2 lg:left-[26rem] xl:left-[30rem] -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-surface border border-border shadow-2xl rounded-card p-4 items-center justify-between z-40 transition-transform duration-300">
+      <span class="font-bold text-text">Task deleted</span>
+      <button class="text-accent font-extrabold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-2 py-1 transition-colors min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 flex items-center justify-center">Undo</button>
+    </div>
+  </main>
+
+  <script>
+    const mockTasks = [
+      { id: 1, title: 'Draft Q4 roadmap', completed: false },
+      { id: 2, title: 'Renew passport', completed: true },
+      { id: 3, title: 'Buy oat milk', completed: false },
+      { id: 4, title: 'Schedule dentist', completed: false },
+      { id: 5, title: 'Call mom', completed: true },
+      { id: 6, title: 'Update dependencies', completed: false }
+    ];
+
+    function render() {
+      const params = new URLSearchParams(window.location.search);
+      const state = params.get('state') || 'populated';
+      const theme = params.get('theme') || 'light';
+      const filter = params.get('filter') || 'all';
+      const showControls = params.get('controls') !== '0';
+
+      // 1. Theme
+      let isDark = false;
+      if (theme === 'dark') {
+        isDark = true;
+      } else if (theme === 'system') {
+        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+
+      document.querySelectorAll('[data-theme-btn]').forEach(btn => {
+        if (btn.dataset.themeBtn === theme) {
+          btn.setAttribute('aria-pressed', 'true');
+        } else {
+          btn.setAttribute('aria-pressed', 'false');
+        }
+      });
+
+      // 2. Controls
+      document.getElementById('controls').style.display = showControls ? 'flex' : 'none';
+      document.getElementById('theme-toggle-select').value = theme;
+      document.getElementById('state-toggle').value = state;
+
+      // 3. Error state
+      const input = document.getElementById('new-task');
+      const errorMsg = document.getElementById('error-message');
+      if (state === 'error') {
+        input.setAttribute('aria-invalid', 'true');
+        input.classList.add('border-danger', 'focus-visible:ring-danger');
+        input.classList.remove('border-border-ui', 'focus-visible:ring-ring');
+        errorMsg.classList.remove('hidden');
+      } else {
+        input.removeAttribute('aria-invalid');
+        input.classList.remove('border-danger', 'focus-visible:ring-danger');
+        input.classList.add('border-border-ui', 'focus-visible:ring-ring');
+        errorMsg.classList.add('hidden');
+      }
+
+      // 4. Toast
+      const toast = document.getElementById('toast');
+      if (state === 'toast') {
+        toast.classList.remove('hidden');
+        toast.classList.add('flex');
+        document.body.classList.add('has-toast');
+      } else {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+        document.body.classList.remove('has-toast');
+      }
+
+      // 5. Active filter styles
+      document.querySelectorAll('[data-filter]').forEach(btn => {
+        if (btn.dataset.filter === filter) {
+          btn.setAttribute('aria-current', 'page');
+          if (btn.classList.contains('sidebar-filter')) {
+            btn.classList.add('bg-surface', 'text-text', 'shadow-sm');
+            btn.classList.remove('text-text-muted', 'hover:bg-surface/50');
+          }
+        } else {
+          btn.removeAttribute('aria-current');
+          if (btn.classList.contains('sidebar-filter')) {
+            btn.classList.remove('bg-surface', 'text-text', 'shadow-sm');
+            btn.classList.add('text-text-muted', 'hover:bg-surface/50');
+          }
+        }
+      });
+
+      // 6. View title
+      const viewTitle = document.getElementById('view-title');
+      if (filter === 'all') viewTitle.textContent = 'All tasks';
+      if (filter === 'active') viewTitle.textContent = 'Active';
+      if (filter === 'completed') viewTitle.textContent = 'Completed';
+
+      // 7. Calculate lists & counts
+      const currentTasks = state === 'empty' ? [] : mockTasks;
+      const allCount = currentTasks.length;
+      const activeCount = currentTasks.filter(t => !t.completed).length;
+      const completedCount = currentTasks.filter(t => t.completed).length;
+
+      document.querySelectorAll('.count-all').forEach(el => el.textContent = allCount);
+      document.querySelectorAll('.count-active').forEach(el => el.textContent = activeCount);
+      document.querySelectorAll('.count-completed').forEach(el => el.textContent = completedCount);
+
+      // 8. Footer visibility
+      const desktopFooter = document.getElementById('desktop-footer');
+      const mobileFooter = document.getElementById('mobile-footer');
+      if (state === 'empty') {
+        desktopFooter.style.display = 'none';
+        mobileFooter.style.display = 'none';
+      } else {
+        desktopFooter.style.display = '';
+        mobileFooter.style.display = '';
+      }
+
+      // 9. Items left & clear completed
+      const itemsLeftText = `${activeCount} item${activeCount !== 1 ? 's' : ''} left`;
+      document.getElementById('desktop-items-count').textContent = itemsLeftText;
+      document.getElementById('mobile-items-count').textContent = itemsLeftText;
+
+      const hasCompleted = completedCount > 0;
+      document.getElementById('desktop-clear-completed').disabled = !hasCompleted;
+      document.getElementById('mobile-clear-completed').disabled = !hasCompleted;
+
+      // 10. Render Task List
+      const emptyState = document.getElementById('empty-state');
+      const noMatchState = document.getElementById('no-match-state');
+      const noMatchMessage = document.getElementById('no-match-message');
+      const taskList = document.getElementById('task-list');
+
+      if (state === 'empty') {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        noMatchState.classList.add('hidden');
+        noMatchState.classList.remove('flex');
+        taskList.innerHTML = '';
+      } else {
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
+
+        let filteredTasks = currentTasks;
+        if (filter === 'active') filteredTasks = currentTasks.filter(t => !t.completed);
+        if (filter === 'completed') filteredTasks = currentTasks.filter(t => t.completed);
+
+        if (filteredTasks.length === 0) {
+          noMatchState.classList.remove('hidden');
+          noMatchState.classList.add('flex');
+          noMatchMessage.textContent = filter === 'active' ? 'No active tasks.' : 'No completed tasks.';
+          taskList.innerHTML = '';
+        } else {
+          noMatchState.classList.add('hidden');
+          noMatchState.classList.remove('flex');
+
+          taskList.innerHTML = filteredTasks.map((t, idx) => {
+            if (state === 'editing' && idx === 0) {
+              return `
+                <li class="bg-card border-2 border-accent shadow-md rounded-card p-3 flex flex-col gap-2 transition-colors">
+                  <form class="flex-1 flex flex-col w-full relative" onsubmit="event.preventDefault()">
+                    <label for="edit-task-${t.id}" class="sr-only">Edit task</label>
+                    <input type="text" id="edit-task-${t.id}" value="${t.title}" 
+                           class="w-full bg-surface border border-border-ui rounded-lg px-3 py-3 text-lg font-bold text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" 
+                           autofocus />
+                    <span class="text-xs text-text-muted font-bold px-2 mt-2 flex gap-3">
+                      <span class="flex items-center"><kbd class="inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mr-1">Enter</kbd> to save</span>
+                      <span class="flex items-center"><kbd class="inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mr-1">Esc</kbd> to cancel</span>
+                    </span>
+                  </form>
+                </li>
+              `;
+            }
+
+            const showDrag = filter === 'all';
+
+            return `
+              <li class="group relative bg-card hover:bg-card-hover border border-border shadow-sm rounded-card p-2 lg:p-3.5 flex items-center gap-2 lg:gap-3 transition-colors motion-reduce:transition-none">
+                ${showDrag ? `
+                <div class="hidden lg:flex opacity-0 group-hover:opacity-100 text-border-ui cursor-grab active:cursor-grabbing transition-opacity absolute -left-8 top-0 h-full items-center justify-center w-8" aria-hidden="true">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="8" r="1"></circle><circle cx="9" cy="16" r="1"></circle>
+                    <circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="8" r="1"></circle><circle cx="15" cy="16" r="1"></circle>
+                  </svg>
+                </div>
+                ` : ''}
+                
+                <label class="relative flex items-center justify-center cursor-pointer min-w-[44px] min-h-[44px] lg:min-w-[32px] lg:min-h-[32px]">
+                  <input type="checkbox" class="peer sr-only" ${t.completed ? 'checked' : ''} aria-label="Mark ${t.title} as completed" />
+                  <div class="w-7 h-7 rounded-full border-2 border-border-ui peer-checked:bg-accent peer-checked:border-accent peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-card transition-all motion-reduce:transition-none flex items-center justify-center">
+                    <svg class="w-4 h-4 text-accent-text opacity-0 [.peer:checked~*_&]:opacity-100 transition-opacity motion-reduce:transition-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                </label>
+                
+                <span class="flex-1 text-lg font-semibold px-2 lg:px-0 transition-colors motion-reduce:transition-none truncate ${t.completed ? 'line-through text-text-muted' : 'text-text'}">
+                  ${t.title}
+                </span>
+                
+                <button aria-label="Delete task: ${t.title}" class="opacity-100 lg:opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 text-text-muted hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:text-danger rounded-full p-2 transition-all motion-reduce:transition-none flex items-center justify-center min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px]">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </li>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    function updateUrl(params) {
+      const url = new URL(window.location);
+      Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
+      window.history.pushState({}, '', url);
+      render();
+    }
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const params = new URLSearchParams(window.location.search);
+      if ((params.get('theme') || 'light') === 'system') {
+        render();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      render();
+      
+      document.getElementById('state-toggle').addEventListener('change', (e) => updateUrl({ state: e.target.value }));
+      document.getElementById('theme-toggle-select').addEventListener('change', (e) => updateUrl({ theme: e.target.value }));
+      
+      document.querySelectorAll('[data-theme-btn]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          updateUrl({ theme: btn.dataset.themeBtn });
+        });
+      });
+
+      document.querySelectorAll('nav').forEach(nav => {
+        nav.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-filter]');
+          if (btn) updateUrl({ filter: btn.dataset.filter });
+        });
+      });
+
+      window.addEventListener('popstate', render);
+    });
+  </script>
+</body>
+</html>
