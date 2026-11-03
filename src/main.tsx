@@ -1,7 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
-import { App } from "./app/App.tsx";
+import { RouterProvider } from "react-router/dom";
+import { createAppRouter } from "./app/router.tsx";
 import { makeStore } from "./app/store.ts";
 import "./index.css";
 
@@ -10,10 +11,12 @@ if (!container) {
   throw new Error("Root element #root not found");
 }
 
+const router = createAppRouter();
+
 createRoot(container).render(
   <StrictMode>
     <Provider store={makeStore()}>
-      <App />
+      <RouterProvider router={router} />
     </Provider>
   </StrictMode>,
 );
