@@ -1,6 +1,7 @@
 import { type Ref, useId, useState } from "react";
 import { useAppDispatch } from "../../../app/hooks.ts";
 import { add } from "../tasksSlice.ts";
+import { clampTitleLength, normalizePastedTitle, TITLE_MAX_LENGTH } from "../title.ts";
 
 type Props = {
   inputRef?: Ref<HTMLInputElement>;
@@ -35,6 +36,23 @@ export function TaskForm({ inputRef }: Props) {
     }
   };
 
+  const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const pasted = normalizePastedTitle(event.clipboardData.getData("text/plain"));
+    const input = event.currentTarget;
+    const start = input.selectionStart ?? 0;
+    const end = input.selectionEnd ?? 0;
+    const next = clampTitleLength(value.slice(0, start) + pasted + value.slice(end));
+    const caret = Math.min(start + pasted.length, next.length);
+    setValue(next);
+    if (error) {
+      setError(false);
+    }
+    queueMicrotask(() => {
+      input.setSelectionRange(caret, caret);
+    });
+  };
+
   return (
     <form className="mb-6 relative" onSubmit={handleSubmit}>
       <label htmlFor={id} className="sr-only">
@@ -47,7 +65,9 @@ export function TaskForm({ inputRef }: Props) {
           id={id}
           name="title"
           value={value}
+          maxLength={TITLE_MAX_LENGTH}
           onChange={handleChange}
+          onPaste={handlePaste}
           placeholder="Add a task..."
           aria-describedby={error ? errorId : undefined}
           aria-invalid={error ? "true" : undefined}
@@ -64,6 +84,16 @@ export function TaskForm({ inputRef }: Props) {
           Add
         </button>
       </div>
+      {value.length > 0 ? (
+        <p
+          aria-hidden="true"
+          className={`text-right text-sm mt-1 mr-4 ${
+            value.length === TITLE_MAX_LENGTH ? "text-danger" : "text-text-muted"
+          }`}
+        >
+          {value.length} / {TITLE_MAX_LENGTH}
+        </p>
+      ) : null}
       <div
         id={errorId}
         aria-live="polite"

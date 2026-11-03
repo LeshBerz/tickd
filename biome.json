@@ -22,7 +22,10 @@
       "test": "recommended"
     },
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "security": {
+        "noDangerouslySetInnerHtml": "error"
+      }
     }
   },
   "javascript": {

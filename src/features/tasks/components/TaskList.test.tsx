@@ -107,3 +107,26 @@ describe("TaskList focus management", () => {
     expect(checkbox).toBeChecked();
   });
 });
+
+describe("TaskList titles", () => {
+  test("renders emoji, right-to-left titles, and a long unbroken title", () => {
+    const longTitle = "c".repeat(200);
+    renderApp({
+      tasks: [
+        { id: "emoji", title: "👋", completed: false, createdAt: 1 },
+        { id: "hebrew", title: "משימה", completed: false, createdAt: 2 },
+        { id: "arabic", title: "مهمة", completed: false, createdAt: 3 },
+        { id: "long", title: longTitle, completed: false, createdAt: 4 },
+      ],
+    });
+
+    expect(screen.getAllByText("👋").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("משימה").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("مهمة").length).toBeGreaterThan(0);
+    const node = screen
+      .getAllByText(longTitle)
+      .find((element) => element.classList.contains("break-words"));
+    expect(node).toBeDefined();
+    expect(node).toHaveClass("min-w-0");
+  });
+});

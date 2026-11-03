@@ -14,6 +14,19 @@ async function seedTasks(page: Page, tasks: SeedTask[]) {
   }, tasks);
 }
 
+async function pasteIntoAddField(page: Page, text: string) {
+  const input = page.getByRole("textbox", { name: "Add a task" });
+  await input.click();
+  await input.evaluate((element, value) => {
+    const data = new DataTransfer();
+    data.setData("text/plain", value);
+    const event = new ClipboardEvent("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: data });
+    element.dispatchEvent(event);
+  }, text);
+  return input;
+}
+
 test("adds, completes, filters, and removes tasks", async ({ page }) => {
   await page.goto("/");
   const input = page.getByRole("textbox", { name: "Add a task" });
@@ -128,4 +141,48 @@ test("has no detectable accessibility violations in the empty state", async ({ p
   const { violations } = await new AxeBuilder({ page }).analyze();
 
   expect(violations).toEqual([]);
+});
+
+test("pastes a multi-line title as one task line", async ({ page }) => {
+  await page.goto("/");
+  const input = await pasteIntoAddField(page, "hello\n\nworld");
+
+  await expect(input).toHaveValue("hello world");
+  await input.press("Enter");
+
+  await expect(page.getByText("hello world", { exact: true })).toBeVisible();
+  await expect(page.getByRole("listitem")).toHaveCount(1);
+});
+
+test("keeps a 200-character title after reload", async ({ page }) => {
+  const title = "a".repeat(200);
+  await page.goto("/");
+  const input = page.getByRole("textbox", { name: "Add a task" });
+
+  await input.fill(title);
+  await input.press("Enter");
+
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+});
+
+test("shows a banner when saved tasks are corrupted and dismisses it", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("tickd:tasks", "{not json");
+  });
+  await page.goto("/");
+
+  const banner = page.getByRole("status").filter({
+    hasText: "Couldn't restore saved tasks. Starting fresh.",
+  });
+  await expect(banner).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "All tasks" })).toBeVisible();
+  await expect(page.getByText("All caught up!")).toBeVisible();
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+
+  await page.getByRole("button", { name: "Dismiss" }).click();
+  await expect(banner).toBeHidden();
 });

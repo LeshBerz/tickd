@@ -3,10 +3,12 @@ import type { RootState } from "../../app/store.ts";
 import type { Filter } from "./filter.ts";
 import type { Task } from "./schema.ts";
 
-export const selectTasks = (state: RootState): Task[] => state.tasks.items;
+type TasksSelectorState = Pick<RootState, "tasks">;
+
+export const selectTasks = (state: TasksSelectorState): Task[] => state.tasks.items;
 
 export const selectVisibleTasks = createSelector(
-  [selectTasks, (_state: RootState, filter: Filter) => filter],
+  [selectTasks, (_state: TasksSelectorState, filter: Filter) => filter],
   (items, filter): Task[] => {
     switch (filter) {
       case "all":

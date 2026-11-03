@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Task } from "./schema.ts";
+import { TITLE_MAX_LENGTH } from "./title.ts";
 
 export type TasksState = { items: Task[] };
 export const initialState: TasksState = { items: [] };
@@ -10,7 +11,8 @@ export const tasksSlice = createSlice({
   reducers: {
     add: {
       reducer(state, action: PayloadAction<Task>) {
-        if (action.payload.title.trim() === "") {
+        const title = action.payload.title;
+        if (title.trim() === "" || title.length > TITLE_MAX_LENGTH) {
           return;
         }
         state.items.push(action.payload);

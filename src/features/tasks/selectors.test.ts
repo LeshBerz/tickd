@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { persistenceSlice } from "../../app/persistenceSlice.ts";
 import type { RootState } from "../../app/store.ts";
 import type { Task } from "./schema.ts";
 import { selectTaskCounts, selectTasks, selectVisibleTasks } from "./selectors.ts";
@@ -14,7 +15,10 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 function stateWith(items: Task[]): RootState {
-  return { tasks: { items } };
+  return {
+    tasks: { items },
+    persistence: persistenceSlice.getInitialState(),
+  };
 }
 
 test("selectTasks returns the task items", () => {

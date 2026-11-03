@@ -82,6 +82,71 @@ describe("parseStoredTasks", () => {
 
     expect(parseStoredTasks(stored)).toEqual([task()]);
   });
+
+  test("rejects a title longer than 200 characters after trim", () => {
+    expect(
+      parseStoredTasks({
+        version: 1,
+        tasks: [task({ title: ` \t${"a".repeat(201)}\t ` })],
+      }),
+    ).toBeNull();
+  });
+
+  test.each([
+    [
+      "version 1",
+      {
+        version: 1,
+        tasks: [task(), task({ id: "task-2", title: "a".repeat(201) })],
+      },
+    ],
+    ["version 0", [task(), task({ id: "task-2", title: "a".repeat(201) })]],
+  ])(
+    "rejects the entire %s payload when one title is longer than 200 characters",
+    (_format, stored) => {
+      expect(parseStoredTasks(stored)).toBeNull();
+    },
+  );
+
+  test("accepts a title of exactly 200 characters", () => {
+    const storedTask = task({ title: "a".repeat(200) });
+
+    expect(parseStoredTasks({ version: 1, tasks: [storedTask] })).toEqual([storedTask]);
+  });
+
+  test("accepts a title of exactly 200 characters after trim", () => {
+    const title = "a".repeat(200);
+
+    expect(parseStoredTasks({ version: 1, tasks: [task({ title: `  ${title}  ` })] })).toEqual([
+      task({ title }),
+    ]);
+  });
+
+  test.each([
+    ["an emoji", "👋"],
+    ["Hebrew text", "משימה"],
+    ["Arabic text", "مهمة"],
+    ["emoji and right-to-left text", "👋 משימה مهمة"],
+  ])("accepts %s in a title", (_description, title) => {
+    const storedTask = task({ title });
+
+    expect(parseStoredTasks({ version: 1, tasks: [storedTask] })).toEqual([storedTask]);
+  });
+
+  test("accepts 100 emoji as a 200-code-unit title", () => {
+    const title = "👋".repeat(100);
+    const storedTask = task({ title });
+
+    expect(title).toHaveLength(200);
+    expect(parseStoredTasks({ version: 1, tasks: [storedTask] })).toEqual([storedTask]);
+  });
+
+  test("rejects a title of 201 code units", () => {
+    const title = `${"👋".repeat(100)}x`;
+
+    expect(title).toHaveLength(201);
+    expect(parseStoredTasks({ version: 1, tasks: [task({ title })] })).toBeNull();
+  });
 });
 
 describe("migrate", () => {

@@ -94,6 +94,65 @@ describe("add", () => {
 
     expect(next).toBe(state);
   });
+
+  test("stores an emoji title after trimming the ends", () => {
+    const next = tasksSlice.reducer(initialState, add("  👋  "));
+
+    expect(next.items[0]?.title).toBe("👋");
+  });
+
+  test.each([
+    ["Hebrew", "  משימה  ", "משימה"],
+    ["Arabic", "  مهمة  ", "مهمة"],
+  ])("stores a %s title after trimming the ends", (_script, input, title) => {
+    const next = tasksSlice.reducer(initialState, add(input));
+
+    expect(next.items[0]?.title).toBe(title);
+  });
+
+  test("stores a trimmed title of exactly 200 characters", () => {
+    const title = "a".repeat(200);
+    const next = tasksSlice.reducer(initialState, add(`  ${title}  `));
+
+    expect(next.items[0]?.title).toBe(title);
+  });
+
+  test("stores 100 emoji as a 200-code-unit title", () => {
+    const title = "👋".repeat(100);
+
+    expect(title).toHaveLength(200);
+    expect(tasksSlice.reducer(initialState, add(title)).items[0]?.title).toBe(title);
+  });
+
+  test("ignores a title longer than 200 characters and returns the same state", () => {
+    const state = { items: [task()] };
+
+    expect(tasksSlice.reducer(state, add("a".repeat(201)))).toBe(state);
+  });
+
+  test("ignores a title that is still longer than 200 characters after trimming", () => {
+    const state = { items: [task()] };
+
+    expect(tasksSlice.reducer(state, add(`  ${"a".repeat(201)}  `))).toBe(state);
+  });
+
+  test("ignores an emoji title longer than 200 code units and returns the same state", () => {
+    const state = { items: [task()] };
+    const title = `${"👋".repeat(100)}x`;
+
+    expect(title).toHaveLength(201);
+    expect(tasksSlice.reducer(state, add(title))).toBe(state);
+  });
+
+  test("rejects an over-length payload that bypasses prepare", () => {
+    const state = { items: [task()] };
+    const action = {
+      type: add.type,
+      payload: { id: "x", title: "a".repeat(201), completed: false, createdAt: 1 },
+    };
+
+    expect(tasksSlice.reducer(state, action)).toBe(state);
+  });
 });
 
 describe("toggle", () => {

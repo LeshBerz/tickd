@@ -32,6 +32,37 @@ test("shows a completed task with a line through its title", () => {
   expect(screen.getByRole("checkbox", { name: "Mark Write tests as completed" })).toBeChecked();
 });
 
+test("renders an emoji title as text", () => {
+  render(<TaskItem task={task({ title: "👋" })} onToggle={vi.fn()} onRemove={vi.fn()} />);
+
+  expect(screen.getAllByText("👋").length).toBeGreaterThan(0);
+});
+
+test("renders a Hebrew title as text", () => {
+  render(<TaskItem task={task({ title: "משימה" })} onToggle={vi.fn()} onRemove={vi.fn()} />);
+
+  expect(screen.getAllByText("משימה").length).toBeGreaterThan(0);
+});
+
+test("renders an Arabic title as text", () => {
+  render(<TaskItem task={task({ title: "مهمة" })} onToggle={vi.fn()} onRemove={vi.fn()} />);
+
+  expect(screen.getAllByText("مهمة").length).toBeGreaterThan(0);
+});
+
+test("renders a 200-character unbroken title that can wrap", () => {
+  const title = "a".repeat(200);
+  render(<TaskItem task={task({ title })} onToggle={vi.fn()} onRemove={vi.fn()} />);
+
+  const node = screen
+    .getAllByText(title)
+    .find((element) => element.classList.contains("break-words"));
+
+  expect(node).toBeDefined();
+  expect(node).toHaveClass("break-words");
+  expect(node).toHaveClass("min-w-0");
+});
+
 test("requests removal from its labelled delete button", async () => {
   const onRemove = vi.fn();
   const user = userEvent.setup();

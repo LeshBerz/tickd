@@ -1,8 +1,9 @@
 import * as v from "valibot";
+import { TITLE_MAX_LENGTH } from "./title.ts";
 
 export const TaskSchema = v.object({
   id: v.pipe(v.string(), v.nonEmpty()),
-  title: v.pipe(v.string(), v.trim(), v.nonEmpty()),
+  title: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.maxLength(TITLE_MAX_LENGTH)),
   completed: v.boolean(),
   createdAt: v.pipe(v.number(), v.integer(), v.minValue(0)),
 });
