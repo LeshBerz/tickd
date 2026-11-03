@@ -1,30 +1,30 @@
-# 0006. React Compiler instead of manual memoization
+# 0006. React Compiler вместо ручной мемоизации
 
-- Status: Accepted
-- Date: 2026-11-02
+- Статус: Принято
+- Дата: 2026-11-02
 
-## Context
+## Контекст
 
-- React 19 components re-render on every parent render.
-- Manual `useMemo`, `useCallback` and `memo` add noise and are easy to get wrong (stale dependencies).
-- React Compiler 1.0 is stable and memoizes automatically at build time.
+- Компоненты React 19 перерисовываются при каждой перерисовке родителя.
+- Ручные `useMemo`, `useCallback` и `memo` добавляют шум, и в них легко ошибиться (устаревшие зависимости).
+- React Compiler 1.0 стабилен и автоматически мемоизирует код на этапе сборки.
 
-## Decision
+## Решение
 
-- Enable React Compiler 1.0 for the whole app through Babel: `@vitejs/plugin-react` 6 with `reactCompilerPreset()` passed to `@rolldown/plugin-babel`.
-- Dev dependencies required: `babel-plugin-react-compiler` and `@babel/core`. `@babel/core` stays on 7.x because the compiler is built against `@babel/types` 7.
-- Code does not use `useMemo`, `useCallback` or `memo` by default.
-- Redux selectors that allocate still use `createSelector`. Selector memoization is about store subscriptions, not rendering, so the compiler does not replace it.
+- Включить React Compiler 1.0 для всего приложения через Babel: `@vitejs/plugin-react` 6 с `reactCompilerPreset()`, передаваемым в `@rolldown/plugin-babel`.
+- Необходимые dev-зависимости: `babel-plugin-react-compiler` и `@babel/core`. `@babel/core` остаётся на 7.x, потому что компилятор собран против `@babel/types` 7.
+- По умолчанию код не использует `useMemo`, `useCallback` и `memo`.
+- Redux-селекторы, которые создают новые объекты, по-прежнему используют `createSelector`. Мемоизация селекторов относится к подпискам на store, а не к рендерингу, поэтому компилятор её не заменяет.
 
-## Alternatives considered
+## Рассмотренные альтернативы
 
-- **Manual memoization.** Explicit, but noisy and error-prone.
-- **Experimental Rust port of the compiler** (`oxc-transform-react` via `react({ compiler: true })`). Faster builds, but marked experimental in the plugin docs. Revisit when it becomes stable.
-- **No memoization at all.** Fine for a small app, but the compiler has no runtime cost and keeps the codebase free of manual optimizations as it grows.
+- **Ручная мемоизация.** Явная, но шумная и подверженная ошибкам.
+- **Экспериментальный порт компилятора на Rust** (`oxc-transform-react` через `react({ compiler: true })`). Сборка быстрее, но в документации плагина помечен как экспериментальный. Вернуться к нему, когда он станет стабильным.
+- **Вообще без мемоизации.** Подходит для небольшого приложения, но у компилятора нет runtime-стоимости, и он избавляет кодовую базу от ручных оптимизаций по мере роста.
 
-## Consequences
+## Последствия
 
-- Positive: cleaner components without memoization boilerplate.
-- Negative: Babel runs on app code, so builds are slightly slower than a pure oxc pipeline.
-- Negative: components must follow the Rules of React (pure render, no mutation of props or state). Otherwise the compiler skips them.
-- Negative: memoization is verified with the React DevTools "Memo ✨" badge rather than by reading code.
+- Плюс: более чистые компоненты без шаблонного кода мемоизации.
+- Минус: Babel обрабатывает код приложения, поэтому сборки немного медленнее, чем на чистом oxc-конвейере.
+- Минус: компоненты должны следовать Rules of React (чистый рендер, без мутации props и state). Иначе компилятор их пропускает.
+- Минус: мемоизация проверяется по бейджу React DevTools "Memo ✨", а не чтением кода.

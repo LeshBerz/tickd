@@ -1,39 +1,39 @@
-# 0002. Redux Toolkit with listener middleware for persistence
+# 0002. Redux Toolkit и listener middleware для персистентности
 
-- Status: Accepted
-- Date: 2026-11-03
+- Статус: Принято
+- Дата: 2026-11-03
 
-## Context
+## Контекст
 
-- The state is small now, but planned extensions (undo, cross-tab sync, reorder, a lists module) need predictable updates, derived data and side effects outside components.
-- React Compiler is enabled (ADR 0006), so derived data goes through memoized selectors (`createSelector`).
+- Сейчас состояние небольшое, но запланированные расширения (undo, синхронизация между вкладками, изменение порядка, модуль списков) требуют предсказуемых обновлений, производных данных и побочных эффектов вне компонентов.
+- React Compiler включён (ADR 0006), поэтому производные данные проходят через мемоизированные селекторы (`createSelector`).
 
-## Decision
+## Решение
 
-- Use a Redux Toolkit slice `tasks` with the state `{ items: Task[] }` and the actions `add`, `toggle` and `remove`.
-- `add` has a `prepare` callback that trims the title and generates `id` (`crypto.randomUUID()`) and `createdAt` (`Date.now()`). The reducer also ignores empty or whitespace-only titles, even if `prepare` is bypassed.
-- New tasks are appended. Array order is display order.
-- The store is created by `makeStore(preloadedState?)`:
-  - There is no module-level singleton.
-  - By default it preloads tasks from localStorage.
-  - `src/main.tsx` creates it once and passes it to `Provider`. Tests create a fresh store each.
-- Typed hooks `useAppDispatch` and `useAppSelector` are built with `withTypes`.
-- Persistence is a single listener in `src/app/listeners.ts`. Its predicate is `current.tasks.items !== previous.tasks.items`, and its effect calls `saveTasks`.
-- Consequences of the predicate:
-  - Any real change is saved, regardless of which action caused it.
-  - No-op actions (unknown id, empty title) never write, because Immer keeps the same reference.
-  - Creating the store never writes.
+- Использовать slice Redux Toolkit `tasks` с состоянием `{ items: Task[] }` и действиями `add`, `toggle` и `remove`.
+- У `add` есть callback `prepare`, который обрезает пробелы в заголовке и генерирует `id` (`crypto.randomUUID()`) и `createdAt` (`Date.now()`). Reducer дополнительно игнорирует пустые заголовки и заголовки из одних пробелов, даже если `prepare` обойдён.
+- Новые задачи добавляются в конец. Порядок массива — это порядок отображения.
+- Store создаётся через `makeStore(preloadedState?)`:
+  - модульного синглтона нет;
+  - по умолчанию он предзагружает задачи из localStorage;
+  - `src/main.tsx` создаёт его один раз и передаёт в `Provider`. Тесты создают каждый раз новый store.
+- Типизированные хуки `useAppDispatch` и `useAppSelector` собраны через `withTypes`.
+- Персистентность — это один listener в `src/app/listeners.ts`. Его предикат — `current.tasks.items !== previous.tasks.items`, а его effect вызывает `saveTasks`.
+- Следствия предиката:
+  - любое реальное изменение сохраняется независимо от того, какое действие его вызвало;
+  - действия без эффекта (неизвестный id, пустой заголовок) ничего не записывают, потому что Immer сохраняет ту же ссылку;
+  - создание store ничего не записывает.
 
-## Alternatives considered
+## Рассмотренные альтернативы
 
-- **React context + `useReducer`.** Fine for this size, but has no middleware for side effects. Persistence in `useEffect` mixes concerns, and the approach scales worse for the planned extensions.
-- **Zustand.** Smaller, but adds a dependency and gives less structure around side effects. Redux Toolkit is already part of the stack.
-- **`redux-persist`.** Adds a dependency, uses an opaque storage format and makes versioning and migrations harder (see ADR 0003).
-- **Listener on an explicit list of action types.** Every new action must be remembered. The state-reference predicate cannot forget.
+- **React context + `useReducer`.** Подходит для такого размера, но нет middleware для побочных эффектов. Персистентность в `useEffect` смешивает ответственности, а сам подход хуже масштабируется под запланированные расширения.
+- **Zustand.** Меньше по размеру, но добавляет зависимость и даёт меньше структуры вокруг побочных эффектов. Redux Toolkit уже входит в стек.
+- **`redux-persist`.** Добавляет зависимость, использует непрозрачный формат хранения и усложняет версионирование и миграции (см. ADR 0003).
+- **Listener на явный список типов действий.** Нужно помнить о каждом новом действии. Предикат по ссылке на состояние забыть не может.
 
-## Consequences
+## Последствия
 
-- Positive: side effects are isolated and testable through the real store; reducers stay pure.
-- Positive: cross-tab sync (later) will add a `replaceAll` action excluded from the predicate, which avoids write-back loops.
-- Negative: more boilerplate than a hook.
-- Negative: Redux Toolkit's bundled type declarations fail full library type checking under `exactOptionalPropertyTypes`, so `tsconfig.app.json` sets `skipLibCheck: true`. Our own code is still checked with `exactOptionalPropertyTypes`.
+- Плюс: побочные эффекты изолированы и тестируются через настоящий store; reducers остаются чистыми.
+- Плюс: синхронизация между вкладками (позже) добавит действие `replaceAll`, исключённое из предиката, что предотвращает циклы обратной записи.
+- Минус: больше шаблонного кода, чем с хуком.
+- Минус: встроенные в Redux Toolkit декларации типов не проходят полную проверку типов библиотек при `exactOptionalPropertyTypes`, поэтому в `tsconfig.app.json` задан `skipLibCheck: true`. Наш собственный код по-прежнему проверяется с `exactOptionalPropertyTypes`.

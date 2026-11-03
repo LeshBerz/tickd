@@ -1,43 +1,43 @@
-# 0003. Versioned storage schema with Valibot and migrations
+# 0003. Версионируемая схема хранения на Valibot и миграции
 
-- Status: Accepted
-- Date: 2026-11-03
+- Статус: Принято
+- Дата: 2026-11-03
 
-## Context
+## Контекст
 
-- localStorage is untrusted input: manual edits, older app versions, other tabs and partial writes can all produce unexpected data.
-- The format will change. The planned lists module adds `listId` to tasks.
-- Corrupted data must never crash the app.
+- localStorage — недоверенный ввод: ручные правки, старые версии приложения, другие вкладки и неполные записи могут дать неожиданные данные.
+- Формат будет меняться. Запланированный модуль списков добавляет `listId` к задачам.
+- Повреждённые данные не должны приводить к падению приложения.
 
-## Decision
+## Решение
 
-- Store tasks under the key `tickd:tasks` with the payload `{ version: 1, tasks: Task[] }`.
-- Define `TaskSchema` in Valibot:
-  - `id`: non-empty string.
-  - `title`: trimmed, non-empty string.
+- Хранить задачи под ключом `tickd:tasks` с данными `{ version: 1, tasks: Task[] }`.
+- Описать `TaskSchema` на Valibot:
+  - `id`: непустая строка.
+  - `title`: строка без крайних пробелов, непустая.
   - `completed`: boolean.
-  - `createdAt`: non-negative integer.
-- The `Task` type is inferred from the schema (`v.InferOutput`), so the type and the validation cannot drift.
-- The legacy v0 format is a bare `Task[]` array. `parseStoredTasks` validates the input against the union of v0 and v1, and `migrate()` lifts v0 to v1.
-- Loading is all-or-nothing. `loadTasks()` returns an empty list (with a `console.warn` in development) and never throws if:
-  - any task is invalid,
-  - the version is unknown,
-  - the JSON is invalid,
-  - or storage throws.
-- Reading never writes. Corrupted data stays in storage until the first real change, which overwrites it with a valid v1 payload.
-- `saveTasks` writes `{ version: 1, tasks }` and swallows storage errors (quota exceeded, storage disabled).
-- Unknown keys are stripped.
+  - `createdAt`: неотрицательное целое число.
+- Тип `Task` выводится из схемы (`v.InferOutput`), поэтому тип и валидация не могут разойтись.
+- Прежний формат v0 — это простой массив `Task[]`. `parseStoredTasks` проверяет вход по объединению v0 и v1, а `migrate()` преобразует v0 в v1.
+- Загрузка работает по принципу «всё или ничего». `loadTasks()` возвращает пустой список (с `console.warn` в режиме разработки) и никогда не выбрасывает исключение, если:
+  - любая задача невалидна,
+  - версия неизвестна,
+  - JSON невалиден,
+  - или хранилище выбрасывает исключение.
+- Чтение ничего не записывает. Повреждённые данные остаются в хранилище до первого реального изменения, которое перезапишет их валидными данными v1.
+- `saveTasks` записывает `{ version: 1, tasks }` и подавляет ошибки хранилища (превышена квота, хранилище отключено).
+- Неизвестные ключи удаляются.
 
-## Alternatives considered
+## Рассмотренные альтернативы
 
-- **No validation, `JSON.parse` plus a cast.** Crashes on bad data and the types lie.
-- **Zod.** Larger bundle. Valibot is modular and tree-shakable.
-- **Per-item salvage that drops only invalid tasks.** More resilient, but needs more code and tests. Rejected for now in favor of predictable behavior.
-- **A separate version key in storage.** Needs two writes and can go out of sync with the data.
+- **Без валидации, `JSON.parse` и приведение типа.** Падает на плохих данных, а типы лгут.
+- **Zod.** Больший бандл. Valibot модульный и tree-shakable.
+- **Поэлементное восстановление: отбрасывать только невалидные задачи.** Устойчивее, но требует больше кода и тестов. Пока отклонено в пользу предсказуемого поведения.
+- **Отдельный ключ версии в хранилище.** Требует двух записей и может рассинхронизироваться с данными.
 
-## Consequences
+## Последствия
 
-- Positive: startup is safe with any stored value.
-- Positive: adding v2 means a new schema, one `migrate` step and a test.
-- Negative: one bad task drops the whole list on load, and the first change then overwrites the stored data. This trade-off is accepted.
-- Negative: data written by a newer app version (unknown version) is treated as invalid by an older tab.
+- Плюс: запуск безопасен при любом сохранённом значении.
+- Плюс: добавление v2 — это новая схема, один шаг `migrate` и тест.
+- Минус: одна плохая задача отбрасывает весь список при загрузке, а первое изменение затем перезаписывает сохранённые данные. Этот компромисс принят.
+- Минус: данные, записанные более новой версией приложения (неизвестная версия), старая вкладка считает невалидными.

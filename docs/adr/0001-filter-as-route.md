@@ -1,35 +1,35 @@
-# 0001. Filter is a route, not local state
+# 0001. Фильтр — это маршрут, а не локальное состояние
 
-- Status: Accepted
-- Date: 2026-11-03
+- Статус: Принято
+- Дата: 2026-11-03
 
-## Context
+## Контекст
 
-- The task list has three views: all, active and completed.
-- The selected filter should survive a reload, be shareable as a link and work with browser back/forward.
-- The app is deployed to GitHub Pages (see ADR 0004).
+- В списке задач три представления: все, активные и выполненные.
+- Выбранный фильтр должен сохраняться после перезагрузки, передаваться ссылкой и работать с кнопками браузера «назад» и «вперёд».
+- Приложение развёрнуто на GitHub Pages (см. ADR 0004).
 
-## Decision
+## Решение
 
-- Map filters to routes: `/` is all, `/active` is active, `/completed` is completed.
-- `src/features/tasks/filter.ts` holds the mapping:
-  - `Filter` type and the `FILTERS` list.
-  - `filterPaths` (filter → path).
-  - `filterFromPath` (path → filter). It tolerates one trailing slash, is case-sensitive and returns `null` for unknown paths.
-- The filter is not stored in Redux. Components derive the list with `selectVisibleTasks(state, filter)`.
-- In the UI the filters are links (`NavLink` with `aria-current="page"`), not buttons.
-- Unknown paths redirect to `/`.
-- The router wiring lands together with the UI: `createBrowserRouter` with a `basename`, as described in ADR 0004.
+- Сопоставить фильтры с маршрутами: `/` — все, `/active` — активные, `/completed` — выполненные.
+- Сопоставление хранится в `src/features/tasks/filter.ts`:
+  - тип `Filter` и список `FILTERS`;
+  - `filterPaths` (фильтр → путь);
+  - `filterFromPath` (путь → фильтр). Допускает один завершающий слэш, учитывает регистр и возвращает `null` для неизвестных путей.
+- Фильтр не хранится в Redux. Компоненты получают список через `selectVisibleTasks(state, filter)`.
+- В интерфейсе фильтры — это ссылки (`NavLink` с `aria-current="page"`), а не кнопки.
+- Неизвестные пути перенаправляются на `/`.
+- Подключение роутера появится вместе с UI: `createBrowserRouter` с `basename`, как описано в ADR 0004.
 
-## Alternatives considered
+## Рассмотренные альтернативы
 
-- **`useState` in a component.** Simplest, but the filter is lost on reload, cannot be linked to, and the back button does nothing.
-- **Filter in the Redux store.** Duplicates the URL as a second source of truth and needs syncing between the two.
-- **Query parameter (`?filter=active`).** Works, but gives less clean URLs, and the route already exists as a concept for future modules.
+- **`useState` в компоненте.** Проще всего, но фильтр теряется при перезагрузке, на него нельзя сослаться, а кнопка «назад» ничего не делает.
+- **Фильтр в Redux store.** Дублирует URL как второй источник истины и требует синхронизации между ними.
+- **Query-параметр (`?filter=active`).** Работает, но даёт менее чистые URL, а маршрут уже существует как понятие для будущих модулей.
 
-## Consequences
+## Последствия
 
-- Positive: shareable URLs and working browser history.
-- Positive: the store holds only domain data.
-- Negative: depends on the GitHub Pages 404 redirect (ADR 0004).
-- Negative: filter changes are navigations, so tests that render filtered views need a router.
+- Плюс: URL можно передавать ссылкой, история браузера работает.
+- Плюс: store хранит только доменные данные.
+- Минус: зависимость от 404-редиректа GitHub Pages (ADR 0004).
+- Минус: смена фильтра — это навигация, поэтому тестам, которые рендерят отфильтрованные представления, нужен роутер.

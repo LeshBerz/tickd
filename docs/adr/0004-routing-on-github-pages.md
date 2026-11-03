@@ -1,31 +1,31 @@
-# 0004. Routing on GitHub Pages: BrowserRouter with a 404.html fallback
+# 0004. Роутинг на GitHub Pages: BrowserRouter и запасной вариант 404.html
 
-- Status: Accepted
-- Date: 2026-11-02
+- Статус: Принято
+- Дата: 2026-11-02
 
-## Context
+## Контекст
 
-- The task filter is a route (`/`, `/active`, `/completed`), so URLs are part of the UI and should be clean and shareable.
-- The app is deployed as static files to GitHub Pages under a project subpath (`/<repo>/`).
-- GitHub Pages has no server-side rewrites: a deep link such as `/<repo>/active` returns 404.
+- Фильтр задач — это маршрут (`/`, `/active`, `/completed`), поэтому URL — часть интерфейса и должны быть чистыми и пригодными для передачи ссылкой.
+- Приложение развёртывается статическими файлами на GitHub Pages в подпути проекта (`/<repo>/`).
+- В GitHub Pages нет серверных перезаписей URL: глубокая ссылка (deep link) вида `/<repo>/active` возвращает 404.
 
-## Decision
+## Решение
 
-- Use the React Router data router via `createBrowserRouter`, with `basename` taken from `import.meta.env.BASE_URL`.
-- Vite `base` is read from the `BASE_PATH` environment variable (default `/`). CI sets it to the Pages base path, so the repository name is not hard-coded.
-- Add `public/404.html` with a redirect script (the well-known spa-github-pages technique). It encodes the requested path into a query string and redirects to the app root.
-- A small inline script in `index.html` restores the original URL with `history.replaceState` before the router starts.
-- `404.html` is added in the deployment stage.
+- Использовать data router React Router через `createBrowserRouter`, где `basename` берётся из `import.meta.env.BASE_URL`.
+- Vite `base` читается из переменной окружения `BASE_PATH` (по умолчанию `/`). CI задаёт в ней базовый путь Pages, поэтому имя репозитория не зашито в код.
+- Добавить `public/404.html` со скриптом редиректа (известная техника spa-github-pages). Он кодирует запрошенный путь в query-строку и перенаправляет на корень приложения.
+- Небольшой inline-скрипт в `index.html` восстанавливает исходный URL через `history.replaceState` до запуска роутера.
+- `404.html` добавляется на этапе развёртывания.
 
-## Alternatives considered
+## Рассмотренные альтернативы
 
-- **HashRouter / `createHashRouter`.** Works without any fallback, but URLs become `/#/active`. This undermines the "filter is a route" idea, is worse for sharing, and hash fragments are ignored by many tools. Kept as the fallback if the redirect approach causes issues.
-- **Copying `index.html` to `404.html`.** Simpler, but the deep-link response still has HTTP status 404 and renders the app from a 404 document.
-- **Another host with rewrites (Netlify, Vercel, Cloudflare Pages).** Solves the problem properly, but adds an external account and service. GitHub Pages keeps the code and the deployment in one place.
+- **HashRouter / `createHashRouter`.** Работает без какого-либо запасного варианта, но URL становятся вида `/#/active`. Это подрывает идею «фильтр — это маршрут», хуже для передачи ссылок, а hash-фрагменты игнорируются многими инструментами. Остаётся запасным вариантом, если подход с редиректом создаст проблемы.
+- **Копирование `index.html` в `404.html`.** Проще, но ответ на глубокую ссылку по-прежнему имеет HTTP-статус 404 и отрисовывает приложение из документа 404.
+- **Другой хостинг с перезаписями (Netlify, Vercel, Cloudflare Pages).** Решает проблему по-настоящему, но добавляет внешний аккаунт и сервис. GitHub Pages хранит код и развёртывание в одном месте.
 
-## Consequences
+## Последствия
 
-- Positive: clean, shareable URLs.
-- Negative: one extra redirect on a cold deep link (brief flash, one extra request).
-- Negative: deep links return HTTP 404 before the redirect. This is acceptable for a client-only app without SEO needs.
-- The base path must stay consistent between Vite and the router; `BASE_URL` is the single source.
+- Плюс: чистые URL, которые можно передавать ссылкой.
+- Минус: один дополнительный редирект при холодном заходе по глубокой ссылке (короткая вспышка, один дополнительный запрос).
+- Минус: глубокие ссылки возвращают HTTP 404 до редиректа. Для клиентского приложения без требований к SEO это допустимо.
+- Базовый путь должен оставаться согласованным между Vite и роутером; единственный источник — `BASE_URL`.
