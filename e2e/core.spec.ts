@@ -255,3 +255,79 @@ test("has no detectable accessibility violations on the home page with a footer"
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);
 });
+
+test("renames a task from its title and keeps the new title after reload", async ({ page }) => {
+  // Create via UI: seedTasks uses addInitScript and would reset storage on reload.
+  await page.goto("/");
+  const input = page.getByRole("textbox", { name: "Add a task" });
+  await input.fill("Old title");
+  await input.press("Enter");
+
+  await page.getByRole("button", { name: "Old title", exact: true }).dblclick();
+  const editor = page.getByRole("textbox", { name: "Edit task" });
+  await editor.fill("New title");
+  await editor.press("Enter");
+
+  await expect(page.getByRole("button", { name: "New title", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Old title", exact: true })).toHaveCount(0);
+
+  await page.reload();
+
+  await expect(page.getByRole("button", { name: "New title", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Old title", exact: true })).toHaveCount(0);
+});
+
+test("cancels a title edit with Escape", async ({ page }) => {
+  await seedTasks(page, [{ id: "edit", title: "Keep title", completed: false, createdAt: 1 }]);
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Keep title", exact: true }).dblclick();
+  const editor = page.getByRole("textbox", { name: "Edit task" });
+  await editor.fill("Discarded title");
+  await editor.press("Escape");
+
+  await expect(page.getByRole("button", { name: "Keep title", exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Edit task" })).toHaveCount(0);
+  await expect(page.getByText("Discarded title", { exact: true })).toHaveCount(0);
+});
+
+test("stays in edit and shows an error when Enter is pressed on an empty title", async ({
+  page,
+}) => {
+  await seedTasks(page, [{ id: "edit", title: "Keep title", completed: false, createdAt: 1 }]);
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Keep title", exact: true }).dblclick();
+  const editor = page.getByRole("textbox", { name: "Edit task" });
+  await editor.fill("");
+  await editor.press("Enter");
+
+  await expect(page.getByText("Task can't be empty")).toBeVisible();
+  await expect(editor).toBeVisible();
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveAttribute("aria-invalid", "true");
+  await expect(editor).toHaveValue("");
+  await expect(page.getByRole("button", { name: "Keep title", exact: true })).toHaveCount(0);
+
+  const stored = await page.evaluate(() => localStorage.getItem("tickd:tasks"));
+  expect(JSON.parse(stored ?? "null")).toMatchObject({
+    version: 1,
+    tasks: [{ id: "edit", title: "Keep title", completed: false }],
+  });
+});
+
+test("has no detectable accessibility violations while a task title is being edited", async ({
+  page,
+}) => {
+  await seedTasks(page, [
+    { id: "edit", title: "Editable task", completed: false, createdAt: 1 },
+    { id: "other", title: "Other task", completed: false, createdAt: 2 },
+  ]);
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Editable task", exact: true }).dblclick();
+  await expect(page.getByRole("textbox", { name: "Edit task" })).toBeVisible();
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+});

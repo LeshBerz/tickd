@@ -48,7 +48,23 @@ export const tasksSlice = createSlice({
       }
       state.items = state.items.filter((task) => !task.completed);
     },
+    updateTitle: {
+      reducer(state, action: PayloadAction<{ id: string; title: string }>) {
+        const title = action.payload.title;
+        if (title === "" || title.length > TITLE_MAX_LENGTH) {
+          return;
+        }
+        const task = state.items.find((item) => item.id === action.payload.id);
+        if (!task || task.title === title) {
+          return;
+        }
+        task.title = title;
+      },
+      prepare(id: string, title: string) {
+        return { payload: { id, title: title.trim() } };
+      },
+    },
   },
 });
 
-export const { add, toggle, remove, clearCompleted } = tasksSlice.actions;
+export const { add, toggle, remove, clearCompleted, updateTitle } = tasksSlice.actions;

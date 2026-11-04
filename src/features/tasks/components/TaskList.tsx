@@ -2,7 +2,7 @@ import { type RefObject, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import type { Filter } from "../filter.ts";
 import { selectTaskCounts, selectVisibleTasks } from "../selectors.ts";
-import { remove, toggle } from "../tasksSlice.ts";
+import { remove, toggle, updateTitle } from "../tasksSlice.ts";
 import { TaskItem } from "./TaskItem.tsx";
 
 type Props = {
@@ -13,6 +13,7 @@ type Props = {
 type PendingFocus =
   | { kind: "checkbox"; id: string }
   | { kind: "remove"; id: string }
+  | { kind: "title"; id: string }
   | { kind: "input" };
 
 const NO_MATCH_SUBTITLE: Record<Exclude<Filter, "all">, string> = {
@@ -26,7 +27,29 @@ export function TaskList({ filter, addInputRef }: Props) {
   const dispatch = useAppDispatch();
   const checkboxRefs = useRef(new Map<string, HTMLInputElement>());
   const removeRefs = useRef(new Map<string, HTMLButtonElement>());
+  const titleRefs = useRef(new Map<string, HTMLButtonElement>());
+  const suppressBlurSaveRef = useRef(false);
+  const editDraftRef = useRef("");
+  const editingIdRef = useRef<string | null>(null);
+  const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingFocus, setPendingFocus] = useState<PendingFocus | null>(null);
+
+  editingIdRef.current = editingId;
+
+  useEffect(() => {
+    if (editingId !== null && !tasks.some((task) => task.id === editingId)) {
+      setEditingId(null);
+    }
+  }, [tasks, editingId]);
+
+  useEffect(() => {
+    return () => {
+      if (switchTimerRef.current !== null) {
+        clearTimeout(switchTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (pendingFocus === null) {
@@ -36,6 +59,8 @@ export function TaskList({ filter, addInputRef }: Props) {
       addInputRef.current?.focus();
     } else if (pendingFocus.kind === "checkbox") {
       checkboxRefs.current.get(pendingFocus.id)?.focus();
+    } else if (pendingFocus.kind === "title") {
+      titleRefs.current.get(pendingFocus.id)?.focus();
     } else {
       removeRefs.current.get(pendingFocus.id)?.focus();
     }
@@ -62,6 +87,16 @@ export function TaskList({ filter, addInputRef }: Props) {
     removeRefs.current.delete(id);
   };
 
+  const setTitleRef = (id: string) => (element: HTMLButtonElement | null) => {
+    if (element) {
+      titleRefs.current.set(id, element);
+      return () => {
+        titleRefs.current.delete(id);
+      };
+    }
+    titleRefs.current.delete(id);
+  };
+
   const scheduleNeighbourFocus = (id: string, kind: "checkbox" | "remove") => {
     const index = tasks.findIndex((task) => task.id === id);
     const neighbour = tasks[index + 1] ?? tasks[index - 1];
@@ -70,6 +105,74 @@ export function TaskList({ filter, addInputRef }: Props) {
     } else {
       setPendingFocus({ kind: "input" });
     }
+  };
+
+  const clearSwitchTimer = () => {
+    if (switchTimerRef.current !== null) {
+      clearTimeout(switchTimerRef.current);
+      switchTimerRef.current = null;
+    }
+  };
+
+  const closeEdit = (id: string) => {
+    setEditingId(null);
+    setPendingFocus({ kind: "title", id });
+  };
+
+  const applyBlurPolicy = (id: string, rawTitle: string) => {
+    if (rawTitle.trim() === "") {
+      closeEdit(id);
+      return;
+    }
+    dispatch(updateTitle(id, rawTitle));
+    closeEdit(id);
+  };
+
+  const handleTitleMouseDown = (id: string) => {
+    const currentId = editingIdRef.current;
+    if (currentId === null || currentId === id) {
+      return;
+    }
+    // Suppress the blur that follows this mousedown. If it was only a single click,
+    // commit via D18 after the double-click window; dblclick cancels the timer (D16).
+    suppressBlurSaveRef.current = true;
+    const fromId = currentId;
+    const draft = editDraftRef.current;
+    clearSwitchTimer();
+    switchTimerRef.current = setTimeout(() => {
+      switchTimerRef.current = null;
+      if (editingIdRef.current !== fromId) {
+        return;
+      }
+      applyBlurPolicy(fromId, draft);
+    }, 350);
+  };
+
+  const handleStartEdit = (id: string) => {
+    clearSwitchTimer();
+    if (editingIdRef.current === id) {
+      return;
+    }
+    if (editingIdRef.current !== null) {
+      // D16: discard the previous draft (blur was already suppressed on mousedown).
+      suppressBlurSaveRef.current = true;
+    }
+    const task = tasks.find((item) => item.id === id);
+    if (task) {
+      editDraftRef.current = task.title;
+    }
+    setEditingId(id);
+  };
+
+  const handleSaveEdit = (id: string, title: string) => {
+    clearSwitchTimer();
+    dispatch(updateTitle(id, title));
+    closeEdit(id);
+  };
+
+  const handleCancelEdit = (id: string) => {
+    clearSwitchTimer();
+    closeEdit(id);
   };
 
   const handleToggle = (id: string) => {
@@ -129,6 +232,16 @@ export function TaskList({ filter, addInputRef }: Props) {
           onRemove={handleRemove}
           checkboxRef={setCheckboxRef(task.id)}
           removeRef={setRemoveRef(task.id)}
+          titleRef={setTitleRef(task.id)}
+          isEditing={editingId === task.id}
+          onStartEdit={handleStartEdit}
+          onTitleMouseDown={handleTitleMouseDown}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={handleCancelEdit}
+          onDraftChange={(value) => {
+            editDraftRef.current = value;
+          }}
+          suppressBlurSaveRef={suppressBlurSaveRef}
         />
       ))}
     </ul>

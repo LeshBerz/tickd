@@ -232,6 +232,20 @@ async function clearCompletedAction(): Promise<SliceAction> {
   return creator() as SliceAction;
 }
 
+function isUpdateTitle(value: unknown): value is (id: string, title: string) => SliceAction {
+  return typeof value === "function";
+}
+
+// Loaded at call time so a missing export fails these cases only.
+async function updateTitleAction(id: string, title: string): Promise<SliceAction> {
+  const tasksModule = await import("./tasksSlice.ts");
+  const creator: unknown = Reflect.get(tasksModule, "updateTitle");
+  if (!isUpdateTitle(creator)) {
+    throw new Error("updateTitle is not exported from tasksSlice");
+  }
+  return creator(id, title);
+}
+
 describe("clearCompleted", () => {
   test("removes completed tasks and keeps active tasks in their relative order", async () => {
     const first = task({ id: "task-1", title: "First" });
@@ -277,4 +291,73 @@ describe("clearCompleted", () => {
     expect(next).toBe(initialState);
     expect(next.items).toBe(initialState.items);
   });
+});
+
+describe("updateTitle", () => {
+  test("updates the title of the matching task", async () => {
+    const first = task();
+    const second = task({ id: "task-2", title: "Second task" });
+    const state = { items: [first, second] };
+
+    const next = tasksSlice.reducer(state, await updateTitleAction("task-2", "Renamed"));
+
+    expect(next.items[0]).toBe(first);
+    expect(next.items[1]).toEqual({ ...second, title: "Renamed" });
+  });
+
+  test("trims the title before updating", async () => {
+    const next = tasksSlice.reducer(
+      { items: [task()] },
+      await updateTitleAction("task-1", "  Renamed task \t"),
+    );
+
+    expect(next.items[0]?.title).toBe("Renamed task");
+  });
+
+  test("updates a trimmed title of exactly 200 characters", async () => {
+    const title = "a".repeat(200);
+
+    const next = tasksSlice.reducer(
+      { items: [task()] },
+      await updateTitleAction("task-1", `  ${title}  `),
+    );
+
+    expect(next.items[0]?.title).toBe(title);
+  });
+
+  test("returns the same state for an unknown id", async () => {
+    const state = { items: [task()] };
+
+    expect(tasksSlice.reducer(state, await updateTitleAction("missing", "Renamed"))).toBe(state);
+  });
+
+  test.each(["", "   ", "\t\n"])(
+    "ignores an empty title %j and returns the same state",
+    async (title) => {
+      const state = { items: [task()] };
+
+      expect(tasksSlice.reducer(state, await updateTitleAction("task-1", title))).toBe(state);
+    },
+  );
+
+  test.each([
+    ["longer than 200 characters", "a".repeat(201)],
+    ["still longer than 200 characters after trimming", `  ${"a".repeat(201)}  `],
+  ])("ignores a title %s and returns the same state", async (_label, title) => {
+    const state = { items: [task()] };
+
+    expect(tasksSlice.reducer(state, await updateTitleAction("task-1", title))).toBe(state);
+  });
+
+  test.each(["Same", "  Same  "])(
+    "keeps the same items reference when the title is %j",
+    async (title) => {
+      const state = { items: [task({ title: "Same" })] };
+
+      const next = tasksSlice.reducer(state, await updateTitleAction("task-1", title));
+
+      expect(next.items).toBe(state.items);
+      expect(next).toBe(state);
+    },
+  );
 });
