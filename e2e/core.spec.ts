@@ -14,6 +14,10 @@ async function seedTasks(page: Page, tasks: SeedTask[]) {
   }, tasks);
 }
 
+function visibleText(page: Page, text: string) {
+  return page.getByText(text, { exact: true }).filter({ visible: true });
+}
+
 async function pasteIntoAddField(page: Page, text: string) {
   const input = page.getByRole("textbox", { name: "Add a task" });
   await input.click();
@@ -185,4 +189,69 @@ test("shows a banner when saved tasks are corrupted and dismisses it", async ({ 
 
   await page.getByRole("button", { name: "Dismiss" }).click();
   await expect(banner).toBeHidden();
+});
+
+test("shows the active task count", async ({ page }) => {
+  await seedTasks(page, [
+    { id: "a", title: "Active one", completed: false, createdAt: 1 },
+    { id: "b", title: "Completed one", completed: true, createdAt: 2 },
+    { id: "c", title: "Active two", completed: false, createdAt: 3 },
+  ]);
+  await page.goto("/");
+
+  await expect(visibleText(page, "2 items left")).toHaveCount(1);
+});
+
+test("clears completed tasks and keeps active tasks after reload", async ({ page }) => {
+  await page.goto("/");
+  const input = page.getByRole("textbox", { name: "Add a task" });
+
+  await input.fill("Active task");
+  await input.press("Enter");
+  await input.fill("Completed task");
+  await input.press("Enter");
+  await page.getByRole("checkbox", { name: "Mark Completed task as completed" }).check();
+
+  await expect(visibleText(page, "1 item left")).toHaveCount(1);
+  await page.getByRole("button", { name: "Clear completed", exact: true }).click();
+
+  await expect(page.getByText("Completed task", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Active task", { exact: true })).toBeVisible();
+  await expect(visibleText(page, "1 item left")).toHaveCount(1);
+
+  await page.reload();
+
+  await expect(page.getByText("Completed task", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Active task", { exact: true })).toBeVisible();
+  await expect(visibleText(page, "1 item left")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Clear completed", exact: true })).toBeDisabled();
+});
+
+test("disables Clear completed when no task is completed", async ({ page }) => {
+  await seedTasks(page, [
+    { id: "a", title: "Active one", completed: false, createdAt: 1 },
+    { id: "b", title: "Active two", completed: false, createdAt: 2 },
+  ]);
+  await page.goto("/");
+
+  const clearCompleted = page.getByRole("button", { name: "Clear completed", exact: true });
+  await expect(visibleText(page, "2 items left")).toHaveCount(1);
+  await expect(clearCompleted).toBeDisabled();
+  await expect(clearCompleted).toHaveJSProperty("disabled", true);
+});
+
+test("has no detectable accessibility violations on the home page with a footer", async ({
+  page,
+}) => {
+  await seedTasks(page, [
+    { id: "active", title: "Active task", completed: false, createdAt: 1 },
+    { id: "completed", title: "Completed task", completed: true, createdAt: 2 },
+  ]);
+  await page.goto("/");
+
+  await expect(visibleText(page, "1 item left")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Clear completed", exact: true })).toBeVisible();
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
 });

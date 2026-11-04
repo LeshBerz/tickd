@@ -215,3 +215,66 @@ describe("remove", () => {
     expect(tasksSlice.reducer(state, remove("missing"))).toBe(state);
   });
 });
+
+type SliceAction = Parameters<typeof tasksSlice.reducer>[1];
+
+function isActionCreator(value: unknown): value is () => { type: string } {
+  return typeof value === "function";
+}
+
+// Loaded at call time so a missing export fails these cases only.
+async function clearCompletedAction(): Promise<SliceAction> {
+  const tasksModule = await import("./tasksSlice.ts");
+  const creator: unknown = Reflect.get(tasksModule, "clearCompleted");
+  if (!isActionCreator(creator)) {
+    throw new Error("clearCompleted is not exported from tasksSlice");
+  }
+  return creator() as SliceAction;
+}
+
+describe("clearCompleted", () => {
+  test("removes completed tasks and keeps active tasks in their relative order", async () => {
+    const first = task({ id: "task-1", title: "First" });
+    const second = task({ id: "task-2", title: "Second", completed: true });
+    const third = task({ id: "task-3", title: "Third" });
+    const fourth = task({ id: "task-4", title: "Fourth", completed: true });
+
+    const next = tasksSlice.reducer(
+      { items: [first, second, third, fourth] },
+      await clearCompletedAction(),
+    );
+
+    expect(next.items).toEqual([first, third]);
+  });
+
+  test("removes every task when all tasks are completed", async () => {
+    const state = {
+      items: [
+        task({ id: "task-1", completed: true }),
+        task({ id: "task-2", title: "Second task", completed: true }),
+      ],
+    };
+
+    const next = tasksSlice.reducer(state, await clearCompletedAction());
+
+    expect(next.items).toEqual([]);
+  });
+
+  test("keeps the same items reference when no task is completed", async () => {
+    const first = task();
+    const second = task({ id: "task-2", title: "Second task" });
+    const state = { items: [first, second] };
+
+    const next = tasksSlice.reducer(state, await clearCompletedAction());
+
+    expect(next.items).toBe(state.items);
+    expect(next).toBe(state);
+  });
+
+  test("keeps the same state reference when the list is empty", async () => {
+    const next = tasksSlice.reducer(initialState, await clearCompletedAction());
+
+    expect(next).toBe(initialState);
+    expect(next.items).toBe(initialState.items);
+  });
+});

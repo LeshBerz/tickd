@@ -1,5 +1,6 @@
 import { type Ref, useId, useState } from "react";
 import { useAppDispatch } from "../../../app/hooks.ts";
+import { ADD_TASK_INPUT_ID } from "../taskFormIds.ts";
 import { add } from "../tasksSlice.ts";
 import { clampTitleLength, normalizePastedTitle, TITLE_MAX_LENGTH } from "../title.ts";
 
@@ -11,8 +12,7 @@ export function TaskForm({ inputRef }: Props) {
   const [value, setValue] = useState("");
   const [error, setError] = useState(false);
   const dispatch = useAppDispatch();
-  const id = useId();
-  const errorId = `${id}-error`;
+  const errorId = useId();
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -55,14 +55,14 @@ export function TaskForm({ inputRef }: Props) {
 
   return (
     <form className="mb-6 relative" onSubmit={handleSubmit}>
-      <label htmlFor={id} className="sr-only">
+      <label htmlFor={ADD_TASK_INPUT_ID} className="sr-only">
         Add a task
       </label>
       <div className="relative flex items-center">
         <input
           ref={inputRef}
           type="text"
-          id={id}
+          id={ADD_TASK_INPUT_ID}
           name="title"
           value={value}
           maxLength={TITLE_MAX_LENGTH}

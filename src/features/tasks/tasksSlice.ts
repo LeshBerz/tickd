@@ -42,7 +42,13 @@ export const tasksSlice = createSlice({
       }
       state.items.splice(index, 1);
     },
+    clearCompleted(state) {
+      if (!state.items.some((task) => task.completed)) {
+        return;
+      }
+      state.items = state.items.filter((task) => !task.completed);
+    },
   },
 });
 
-export const { add, toggle, remove } = tasksSlice.actions;
+export const { add, toggle, remove, clearCompleted } = tasksSlice.actions;

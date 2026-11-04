@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import type { Filter } from "../filter.ts";
 import { useRouteFilter } from "../useRouteFilter.ts";
+import { TaskFooter } from "./TaskFooter.tsx";
 import { TaskForm } from "./TaskForm.tsx";
 import { TaskList } from "./TaskList.tsx";
 
@@ -23,6 +24,7 @@ export function TasksView() {
       <TaskForm inputRef={addInputRef} />
       <div className="flex-1 flex flex-col relative">
         <TaskList filter={filter} addInputRef={addInputRef} />
+        <TaskFooter variant="desktop" />
       </div>
     </>
   );

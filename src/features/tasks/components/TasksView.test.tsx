@@ -78,3 +78,50 @@ describe("TasksView empty states", () => {
     expect(screen.queryByText("Hidden task")).not.toBeInTheDocument();
   });
 });
+
+function clearCompletedButton(): HTMLElement {
+  const [button] = screen.getAllByRole("button", { name: "Clear completed" });
+  if (button === undefined) {
+    throw new Error("Clear completed button is missing");
+  }
+  return button;
+}
+
+describe("task footer", () => {
+  test("shows the active count and Clear completed when tasks exist", () => {
+    renderApp({ tasks });
+
+    expect(screen.getAllByText("2 items left")).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Clear completed" })).toHaveLength(2);
+  });
+
+  test("hides the footer when there are no tasks", () => {
+    renderApp({ tasks: [] });
+
+    expect(screen.queryByRole("button", { name: "Clear completed" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/items? left/)).not.toBeInTheDocument();
+  });
+
+  test("shows the empty completed filter after clearing completed tasks", async () => {
+    const { user } = renderApp({ path: "/completed", tasks });
+
+    await user.click(clearCompletedButton());
+
+    expect(screen.getByText("Nothing here")).toBeInTheDocument();
+    expect(screen.getByText("No completed tasks.")).toBeInTheDocument();
+    expect(screen.queryByText("All caught up!")).not.toBeInTheDocument();
+    expect(screen.queryByText("Completed middle")).not.toBeInTheDocument();
+    expect(screen.getAllByText("2 items left")).toHaveLength(2);
+  });
+
+  test("focuses the add input after clearing the completed filter", async () => {
+    const { user } = renderApp({ path: "/completed", tasks });
+
+    await user.click(clearCompletedButton());
+
+    await waitFor(() => expect(document.getElementById("tickd-add-task")).toHaveFocus());
+    expect(document.getElementById("tickd-add-task")).toBe(
+      screen.getByRole("textbox", { name: "Add a task" }),
+    );
+  });
+});

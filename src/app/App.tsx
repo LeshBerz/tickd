@@ -1,6 +1,7 @@
 import { Outlet } from "react-router";
 import { FilterNav } from "../features/tasks/components/FilterNav.tsx";
 import { StorageBanner } from "../features/tasks/components/StorageBanner.tsx";
+import { TaskFooter } from "../features/tasks/components/TaskFooter.tsx";
 
 export function App() {
   return (
@@ -30,6 +31,7 @@ export function App() {
             <Outlet />
           </div>
         </div>
+        <TaskFooter variant="mobile" />
       </main>
     </div>
   );
