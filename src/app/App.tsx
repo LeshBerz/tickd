@@ -2,10 +2,16 @@ import { Outlet } from "react-router";
 import { FilterNav } from "../features/tasks/components/FilterNav.tsx";
 import { StorageBanner } from "../features/tasks/components/StorageBanner.tsx";
 import { TaskFooter } from "../features/tasks/components/TaskFooter.tsx";
+import { UndoToast } from "../features/tasks/components/UndoToast.tsx";
+import { useAppSelector } from "./hooks.ts";
 
 export function App() {
+  const hasUndoToast = useAppSelector((state) => state.tasks.lastRemoved != null);
+
   return (
-    <div className="min-h-dvh flex flex-col lg:flex-row lg:h-dvh lg:overflow-hidden">
+    <div
+      className={`min-h-dvh flex flex-col lg:flex-row lg:h-dvh lg:overflow-hidden${hasUndoToast ? " has-toast" : ""}`}
+    >
       <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-bg shrink-0">
         <h1 className="text-2xl font-extrabold tracking-tight text-accent">Tickd</h1>
       </header>
@@ -32,6 +38,7 @@ export function App() {
           </div>
         </div>
         <TaskFooter variant="mobile" />
+        <UndoToast />
       </main>
     </div>
   );

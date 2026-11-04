@@ -2,8 +2,9 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Task } from "./schema.ts";
 import { TITLE_MAX_LENGTH } from "./title.ts";
 
-export type TasksState = { items: Task[] };
-export const initialState: TasksState = { items: [] };
+export type LastRemoved = { task: Task; index: number };
+export type TasksState = { items: Task[]; lastRemoved: LastRemoved | null };
+export const initialState: TasksState = { items: [], lastRemoved: null };
 
 export const tasksSlice = createSlice({
   name: "tasks",
@@ -40,13 +41,47 @@ export const tasksSlice = createSlice({
       if (index === -1) {
         return;
       }
-      state.items.splice(index, 1);
-    },
-    clearCompleted(state) {
-      if (!state.items.some((task) => task.completed)) {
+      const task = state.items[index];
+      if (task === undefined) {
         return;
       }
-      state.items = state.items.filter((task) => !task.completed);
+      state.lastRemoved = { task, index };
+      state.items.splice(index, 1);
+    },
+    restore(state) {
+      const snapshot = state.lastRemoved;
+      if (snapshot == null) {
+        return;
+      }
+      if (state.items.some((item) => item.id === snapshot.task.id)) {
+        state.lastRemoved = null;
+        return;
+      }
+      const insertAt = Math.min(snapshot.index, state.items.length);
+      state.items.splice(insertAt, 0, snapshot.task);
+      state.lastRemoved = null;
+    },
+    clearLastRemoved(state) {
+      if (state.lastRemoved == null) {
+        return;
+      }
+      state.lastRemoved = null;
+    },
+    clearCompleted(state) {
+      const hasCompleted = state.items.some((task) => task.completed);
+      const hadSnapshot = state.lastRemoved !== null;
+
+      if (!hasCompleted && !hadSnapshot) {
+        return;
+      }
+
+      if (hasCompleted) {
+        state.items = state.items.filter((task) => !task.completed);
+      }
+
+      if (hadSnapshot) {
+        state.lastRemoved = null;
+      }
     },
     updateTitle: {
       reducer(state, action: PayloadAction<{ id: string; title: string }>) {
@@ -67,4 +102,5 @@ export const tasksSlice = createSlice({
   },
 });
 
-export const { add, toggle, remove, clearCompleted, updateTitle } = tasksSlice.actions;
+export const { add, toggle, remove, restore, clearLastRemoved, clearCompleted, updateTitle } =
+  tasksSlice.actions;

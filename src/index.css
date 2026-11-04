@@ -58,3 +58,9 @@
   --theme-border-ui: #a8a29e;
   --theme-ring: #2dd4bf;
 }
+
+@media (max-width: 1023px) {
+  .has-toast {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+}

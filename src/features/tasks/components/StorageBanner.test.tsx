@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { expect, test } from "vitest";
-import { makeStore, type RootState } from "../../../app/store.ts";
+import { makeStore } from "../../../app/store.ts";
 import { type PersistencePreload, renderApp } from "../../../test/renderApp.tsx";
 import { StorageBanner } from "./StorageBanner.tsx";
 
@@ -45,7 +45,7 @@ function renderBanner(persistence: PersistencePreload) {
   const store = makeStore({
     tasks: { items: [] },
     persistence,
-  } as Partial<RootState>);
+  });
   const user = userEvent.setup();
   const view = render(
     <Provider store={store}>

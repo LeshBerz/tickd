@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, test } from "vitest";
-import { makeStore, type RootState } from "../../../app/store.ts";
+import { makeStore } from "../../../app/store.ts";
 import type { Task } from "../schema.ts";
 import { TaskFooter } from "./TaskFooter.tsx";
 
@@ -18,7 +18,7 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 function renderFooter(items: Task[]) {
-  const store = makeStore({ tasks: { items } } as Partial<RootState>);
+  const store = makeStore({ tasks: { items } });
   const user = userEvent.setup();
   const router = createMemoryRouter([{ path: "/", element: <TaskFooter variant="desktop" /> }], {
     initialEntries: ["/"],

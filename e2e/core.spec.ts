@@ -331,3 +331,47 @@ test("has no detectable accessibility violations while a task title is being edi
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);
 });
+
+test("restores a deleted task between its neighbours", async ({ page }) => {
+  await seedTasks(page, [
+    { id: "a", title: "Alpha", completed: false, createdAt: 1 },
+    { id: "b", title: "Bravo", completed: false, createdAt: 2 },
+    { id: "c", title: "Charlie", completed: false, createdAt: 3 },
+  ]);
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Delete task: Bravo" }).click();
+
+  const toast = page.getByRole("status").filter({ hasText: "Task deleted" });
+  await expect(toast).toBeVisible();
+  await expect(toast.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
+  await expect(page.getByRole("listitem")).toHaveCount(2);
+  await expect(page.getByRole("listitem").nth(0)).toContainText("Alpha");
+  await expect(page.getByRole("listitem").nth(1)).toContainText("Charlie");
+
+  await toast.getByRole("button", { name: "Undo", exact: true }).click();
+
+  await expect(toast).toBeHidden();
+  await expect(page.getByRole("listitem")).toHaveCount(3);
+  await expect(page.getByRole("listitem").nth(0)).toContainText("Alpha");
+  await expect(page.getByRole("listitem").nth(1)).toContainText("Bravo");
+  await expect(page.getByRole("listitem").nth(2)).toContainText("Charlie");
+});
+
+test("has no detectable accessibility violations while the undo toast is visible", async ({
+  page,
+}) => {
+  await seedTasks(page, [
+    { id: "a", title: "Alpha", completed: false, createdAt: 1 },
+    { id: "b", title: "Bravo", completed: false, createdAt: 2 },
+    { id: "c", title: "Charlie", completed: false, createdAt: 3 },
+  ]);
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Delete task: Bravo" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Task deleted" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+});

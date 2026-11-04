@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Task } from "./schema.ts";
-import { add, initialState, remove, tasksSlice, toggle } from "./tasksSlice.ts";
+import { add, clearCompleted, initialState, remove, tasksSlice, toggle } from "./tasksSlice.ts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -12,18 +12,39 @@ function task(overrides: Partial<Task> = {}): Task {
   };
 }
 
+type LastRemoved = { task: Task; index: number };
+
+type UndoState = {
+  items: Task[];
+  lastRemoved: LastRemoved | null;
+};
+
+function lastRemovedFrom(state: object): unknown {
+  if (!("lastRemoved" in state)) {
+    return undefined;
+  }
+  return Reflect.get(state, "lastRemoved");
+}
+
+function asTasksState(state: UndoState): Parameters<typeof tasksSlice.reducer>[0] {
+  return state as Parameters<typeof tasksSlice.reducer>[0];
+}
+
 afterEach(() => {
   vi.useRealTimers();
 });
 
-test("initialState contains an empty items list", () => {
-  expect(initialState).toEqual({ items: [] });
+test("initialState contains an empty list and no undo snapshot", () => {
+  expect({
+    items: initialState.items,
+    lastRemoved: lastRemovedFrom(initialState),
+  }).toEqual({ items: [], lastRemoved: null });
 });
 
 describe("add", () => {
   test("appends a task to the end", () => {
     const existing = task();
-    const state = { items: [existing] };
+    const state = { items: [existing], lastRemoved: null };
 
     const next = tasksSlice.reducer(state, add("Second task"));
 
@@ -75,7 +96,7 @@ describe("add", () => {
   test.each(["", "   ", "\t\n"])(
     "ignores an empty title %j and returns the same state",
     (title) => {
-      const state = { items: [task()] };
+      const state = { items: [task()], lastRemoved: null };
 
       const next = tasksSlice.reducer(state, add(title));
 
@@ -84,7 +105,7 @@ describe("add", () => {
   );
 
   test("rejects a whitespace-only payload that bypasses prepare", () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
     const action = {
       type: add.type,
       payload: { id: "x", title: "   ", completed: false, createdAt: 1 },
@@ -125,19 +146,19 @@ describe("add", () => {
   });
 
   test("ignores a title longer than 200 characters and returns the same state", () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
 
     expect(tasksSlice.reducer(state, add("a".repeat(201)))).toBe(state);
   });
 
   test("ignores a title that is still longer than 200 characters after trimming", () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
 
     expect(tasksSlice.reducer(state, add(`  ${"a".repeat(201)}  `))).toBe(state);
   });
 
   test("ignores an emoji title longer than 200 code units and returns the same state", () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
     const title = `${"👋".repeat(100)}x`;
 
     expect(title).toHaveLength(201);
@@ -145,7 +166,7 @@ describe("add", () => {
   });
 
   test("rejects an over-length payload that bypasses prepare", () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
     const action = {
       type: add.type,
       payload: { id: "x", title: "a".repeat(201), completed: false, createdAt: 1 },
@@ -157,13 +178,13 @@ describe("add", () => {
 
 describe("toggle", () => {
   test("flips a task from active to completed", () => {
-    const next = tasksSlice.reducer({ items: [task()] }, toggle("task-1"));
+    const next = tasksSlice.reducer({ items: [task()], lastRemoved: null }, toggle("task-1"));
 
     expect(next.items[0]?.completed).toBe(true);
   });
 
   test("toggling twice restores the completed value", () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
 
     const afterFirst = tasksSlice.reducer(state, toggle("task-1"));
     const afterSecond = tasksSlice.reducer(afterFirst, toggle("task-1"));
@@ -174,7 +195,7 @@ describe("toggle", () => {
   test("changes only the targeted task", () => {
     const first = task();
     const second = task({ id: "task-2", title: "Second task" });
-    const state = { items: [first, second] };
+    const state = { items: [first, second], lastRemoved: null };
 
     const next = tasksSlice.reducer(state, toggle("task-2"));
 
@@ -183,7 +204,7 @@ describe("toggle", () => {
   });
 
   test("returns the same state for an unknown id", () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
 
     expect(tasksSlice.reducer(state, toggle("missing"))).toBe(state);
   });
@@ -194,7 +215,10 @@ describe("remove", () => {
     const first = task();
     const second = task({ id: "task-2", title: "Second task" });
 
-    const next = tasksSlice.reducer({ items: [first, second] }, remove("task-1"));
+    const next = tasksSlice.reducer(
+      { items: [first, second], lastRemoved: null },
+      remove("task-1"),
+    );
 
     expect(next.items).toEqual([second]);
   });
@@ -204,13 +228,16 @@ describe("remove", () => {
     const second = task({ id: "task-2", title: "Second task" });
     const third = task({ id: "task-3", title: "Third task" });
 
-    const next = tasksSlice.reducer({ items: [first, second, third] }, remove("task-2"));
+    const next = tasksSlice.reducer(
+      { items: [first, second, third], lastRemoved: null },
+      remove("task-2"),
+    );
 
     expect(next.items).toEqual([first, third]);
   });
 
   test("returns the same state for an unknown id", () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
 
     expect(tasksSlice.reducer(state, remove("missing"))).toBe(state);
   });
@@ -236,6 +263,15 @@ function isUpdateTitle(value: unknown): value is (id: string, title: string) => 
   return typeof value === "function";
 }
 
+async function undoAction(name: "restore" | "clearLastRemoved"): Promise<SliceAction> {
+  const tasksModule = await import("./tasksSlice.ts");
+  const creator: unknown = Reflect.get(tasksModule, name);
+  if (!isActionCreator(creator)) {
+    throw new Error(`${name} is not exported from tasksSlice`);
+  }
+  return creator() as SliceAction;
+}
+
 // Loaded at call time so a missing export fails these cases only.
 async function updateTitleAction(id: string, title: string): Promise<SliceAction> {
   const tasksModule = await import("./tasksSlice.ts");
@@ -254,7 +290,7 @@ describe("clearCompleted", () => {
     const fourth = task({ id: "task-4", title: "Fourth", completed: true });
 
     const next = tasksSlice.reducer(
-      { items: [first, second, third, fourth] },
+      { items: [first, second, third, fourth], lastRemoved: null },
       await clearCompletedAction(),
     );
 
@@ -267,6 +303,7 @@ describe("clearCompleted", () => {
         task({ id: "task-1", completed: true }),
         task({ id: "task-2", title: "Second task", completed: true }),
       ],
+      lastRemoved: null,
     };
 
     const next = tasksSlice.reducer(state, await clearCompletedAction());
@@ -277,7 +314,7 @@ describe("clearCompleted", () => {
   test("keeps the same items reference when no task is completed", async () => {
     const first = task();
     const second = task({ id: "task-2", title: "Second task" });
-    const state = { items: [first, second] };
+    const state = { items: [first, second], lastRemoved: null };
 
     const next = tasksSlice.reducer(state, await clearCompletedAction());
 
@@ -297,7 +334,7 @@ describe("updateTitle", () => {
   test("updates the title of the matching task", async () => {
     const first = task();
     const second = task({ id: "task-2", title: "Second task" });
-    const state = { items: [first, second] };
+    const state = { items: [first, second], lastRemoved: null };
 
     const next = tasksSlice.reducer(state, await updateTitleAction("task-2", "Renamed"));
 
@@ -307,7 +344,7 @@ describe("updateTitle", () => {
 
   test("trims the title before updating", async () => {
     const next = tasksSlice.reducer(
-      { items: [task()] },
+      { items: [task()], lastRemoved: null },
       await updateTitleAction("task-1", "  Renamed task \t"),
     );
 
@@ -318,7 +355,7 @@ describe("updateTitle", () => {
     const title = "a".repeat(200);
 
     const next = tasksSlice.reducer(
-      { items: [task()] },
+      { items: [task()], lastRemoved: null },
       await updateTitleAction("task-1", `  ${title}  `),
     );
 
@@ -326,7 +363,7 @@ describe("updateTitle", () => {
   });
 
   test("returns the same state for an unknown id", async () => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
 
     expect(tasksSlice.reducer(state, await updateTitleAction("missing", "Renamed"))).toBe(state);
   });
@@ -334,7 +371,7 @@ describe("updateTitle", () => {
   test.each(["", "   ", "\t\n"])(
     "ignores an empty title %j and returns the same state",
     async (title) => {
-      const state = { items: [task()] };
+      const state = { items: [task()], lastRemoved: null };
 
       expect(tasksSlice.reducer(state, await updateTitleAction("task-1", title))).toBe(state);
     },
@@ -344,7 +381,7 @@ describe("updateTitle", () => {
     ["longer than 200 characters", "a".repeat(201)],
     ["still longer than 200 characters after trimming", `  ${"a".repeat(201)}  `],
   ])("ignores a title %s and returns the same state", async (_label, title) => {
-    const state = { items: [task()] };
+    const state = { items: [task()], lastRemoved: null };
 
     expect(tasksSlice.reducer(state, await updateTitleAction("task-1", title))).toBe(state);
   });
@@ -352,7 +389,7 @@ describe("updateTitle", () => {
   test.each(["Same", "  Same  "])(
     "keeps the same items reference when the title is %j",
     async (title) => {
-      const state = { items: [task({ title: "Same" })] };
+      const state = { items: [task({ title: "Same" })], lastRemoved: null };
 
       const next = tasksSlice.reducer(state, await updateTitleAction("task-1", title));
 
@@ -360,4 +397,186 @@ describe("updateTitle", () => {
       expect(next).toBe(state);
     },
   );
+});
+
+describe("remove undo snapshot", () => {
+  test("stores the removed task and its index", () => {
+    const first = task({ id: "task-1", title: "First" });
+    const second = task({ id: "task-2", title: "Second" });
+    const third = task({ id: "task-3", title: "Third" });
+    const state: UndoState = { items: [first, second, third], lastRemoved: null };
+
+    const next = tasksSlice.reducer(asTasksState(state), remove("task-2"));
+
+    expect(next.items).toEqual([first, third]);
+    expect(lastRemovedFrom(next)).toEqual({ task: second, index: 1 });
+  });
+
+  test("replaces the previous snapshot when another task is removed", () => {
+    const first = task({ id: "task-1", title: "First" });
+    const second = task({ id: "task-2", title: "Second" });
+    const third = task({ id: "task-3", title: "Third" });
+    const state: UndoState = { items: [first, second, third], lastRemoved: null };
+
+    const afterFirst = tasksSlice.reducer(asTasksState(state), remove("task-1"));
+    const afterSecond = tasksSlice.reducer(afterFirst, remove("task-3"));
+
+    expect(afterSecond.items).toEqual([second]);
+    expect(lastRemovedFrom(afterSecond)).toEqual({ task: third, index: 1 });
+  });
+
+  test("keeps items and the undo snapshot when the id is unknown", () => {
+    const first = task();
+    const snapshot: LastRemoved = {
+      task: task({ id: "task-9", title: "Removed" }),
+      index: 2,
+    };
+    const state: UndoState = { items: [first], lastRemoved: snapshot };
+
+    const next = tasksSlice.reducer(asTasksState(state), remove("missing"));
+
+    expect(next).toBe(state);
+    expect(next.items).toBe(state.items);
+    expect(lastRemovedFrom(next)).toBe(snapshot);
+  });
+});
+
+describe("restore", () => {
+  test.each([
+    { index: 0, order: ["removed", "first", "second"] },
+    { index: 1, order: ["first", "removed", "second"] },
+    { index: 2, order: ["first", "second", "removed"] },
+  ] as const)("reinserts the deleted task at index $index", async ({ index, order }) => {
+    const first = task({ id: "task-1", title: "First" });
+    const second = task({ id: "task-2", title: "Second" });
+    const removed = task({ id: "task-3", title: "Third", completed: true, createdAt: 30 });
+    const byKey = { first, second, removed };
+    const state: UndoState = {
+      items: [first, second],
+      lastRemoved: { task: removed, index },
+    };
+
+    const next = tasksSlice.reducer(asTasksState(state), await undoAction("restore"));
+
+    expect(next.items).toEqual(order.map((key) => byKey[key]));
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
+
+  test("clamps the insert index when the list is shorter than the snapshot", async () => {
+    const first = task({ id: "task-1", title: "First" });
+    const removed = task({ id: "task-3", title: "Third" });
+    const state: UndoState = {
+      items: [first],
+      lastRemoved: { task: removed, index: 5 },
+    };
+
+    const next = tasksSlice.reducer(asTasksState(state), await undoAction("restore"));
+
+    expect(next.items).toEqual([first, removed]);
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
+
+  test("does nothing when nothing was deleted", async () => {
+    const first = task();
+    const state: UndoState = { items: [first], lastRemoved: null };
+
+    const next = tasksSlice.reducer(asTasksState(state), await undoAction("restore"));
+
+    expect(next).toBe(state);
+    expect(next.items).toBe(state.items);
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
+
+  test("does not insert a second copy when that id is already in the list", async () => {
+    const other = task({ id: "task-2", title: "Other" });
+    const live = task({ id: "task-1", title: "Live title" });
+    const snapshot = task({ id: "task-1", title: "Deleted title" });
+    const state: UndoState = {
+      items: [other, live],
+      lastRemoved: { task: snapshot, index: 0 },
+    };
+
+    const next = tasksSlice.reducer(asTasksState(state), await undoAction("restore"));
+
+    expect(next.items).toBe(state.items);
+    expect(next.items.map((item) => item.title)).toEqual(["Other", "Live title"]);
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
+});
+
+describe("clearLastRemoved", () => {
+  test("clears the undo snapshot and keeps the same items array", async () => {
+    const first = task();
+    const state: UndoState = {
+      items: [first],
+      lastRemoved: { task: task({ id: "task-9", title: "Removed" }), index: 0 },
+    };
+
+    const next = tasksSlice.reducer(asTasksState(state), await undoAction("clearLastRemoved"));
+
+    expect(next.items).toBe(state.items);
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
+
+  test("keeps the same state when the undo snapshot is already empty", async () => {
+    const state: UndoState = { items: [task()], lastRemoved: null };
+
+    const next = tasksSlice.reducer(asTasksState(state), await undoAction("clearLastRemoved"));
+
+    expect(next).toBe(state);
+    expect(next.items).toBe(state.items);
+  });
+});
+
+describe("clearCompleted undo snapshot", () => {
+  test("drops the undo snapshot when it removes completed tasks", () => {
+    const active = task({ id: "task-1", title: "Active" });
+    const done = task({ id: "task-2", title: "Done", completed: true });
+    const removed = task({ id: "task-9", title: "Removed" });
+    const state: UndoState = {
+      items: [active, done],
+      lastRemoved: { task: removed, index: 2 },
+    };
+
+    const next = tasksSlice.reducer(asTasksState(state), clearCompleted());
+
+    expect(next.items).toEqual([active]);
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
+
+  test("clears an undo snapshot without replacing items when nothing is completed", () => {
+    const first = task();
+    const second = task({ id: "task-2", title: "Second task" });
+    const state: UndoState = {
+      items: [first, second],
+      lastRemoved: { task: task({ id: "task-9", title: "Removed" }), index: 0 },
+    };
+
+    const next = tasksSlice.reducer(asTasksState(state), clearCompleted());
+
+    expect(next.items).toBe(state.items);
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
+
+  test("clears an undo snapshot when the list is already empty", () => {
+    const state: UndoState = {
+      items: [],
+      lastRemoved: { task: task({ id: "task-9", title: "Removed" }), index: 0 },
+    };
+
+    const next = tasksSlice.reducer(asTasksState(state), clearCompleted());
+
+    expect(next.items).toBe(state.items);
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
+
+  test("returns the same state when nothing is completed and there is no undo snapshot", () => {
+    const state: UndoState = { items: [task()], lastRemoved: null };
+
+    const next = tasksSlice.reducer(asTasksState(state), clearCompleted());
+
+    expect(next).toBe(state);
+    expect(next.items).toBe(state.items);
+    expect(lastRemovedFrom(next)).toBeNull();
+  });
 });

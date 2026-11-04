@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import type { Task } from "../features/tasks/schema.ts";
 import { add, remove, toggle } from "../features/tasks/tasksSlice.ts";
-import { makeStore, type RootState } from "./store.ts";
+import { makeStore } from "./store.ts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -192,7 +192,7 @@ test("skips save when storage was unavailable at load", () => {
       saveError: null,
       availabilityDismissed: false,
     },
-  } as Partial<RootState>);
+  });
   const setItem = vi.spyOn(Storage.prototype, "setItem");
 
   store.dispatch(add("Stays in memory only"));
@@ -212,7 +212,7 @@ test("clears a save error after a later save succeeds", () => {
       saveError: "quota",
       availabilityDismissed: false,
     },
-  } as Partial<RootState>);
+  });
 
   store.dispatch(add("Fits again"));
 
@@ -232,9 +232,99 @@ test("keeps preloaded persistence when tasks are passed in", () => {
       saveError: null,
       availabilityDismissed: false,
     },
-  } as Partial<RootState>);
+  });
 
   expect(store.getState().tasks.items).toEqual([]);
   expect(persistenceFrom(store).loadDiscarded).toBe(false);
   expect(localStorage.getItem("tickd:tasks")).toBe("{not json");
+});
+
+type UndoAction = { type: string };
+
+function isActionCreator(value: unknown): value is () => UndoAction {
+  return typeof value === "function";
+}
+
+async function undoAction(name: "restore" | "clearLastRemoved"): Promise<UndoAction> {
+  const tasksModule = await import("../features/tasks/tasksSlice.ts");
+  const creator: unknown = Reflect.get(tasksModule, name);
+  if (!isActionCreator(creator)) {
+    throw new Error(`${name} is not exported from tasksSlice`);
+  }
+  return creator();
+}
+
+function lastRemovedOf(store: ReturnType<typeof makeStore>): unknown {
+  const tasks: unknown = store.getState().tasks;
+  if (typeof tasks !== "object" || tasks === null) {
+    throw new Error("tasks state is missing");
+  }
+  if (!("lastRemoved" in tasks)) {
+    return undefined;
+  }
+  return Reflect.get(tasks, "lastRemoved");
+}
+
+describe("undo persistence", () => {
+  test("preloaded tasks start with no undo snapshot", () => {
+    const store = makeStore({ tasks: { items: [task()] } });
+
+    expect(store.getState().tasks.items).toEqual([task()]);
+    expect(lastRemovedOf(store)).toBeNull();
+  });
+
+  test("tasks loaded from storage start with no undo snapshot", () => {
+    const stored = task({ title: "From storage" });
+    localStorage.setItem("tickd:tasks", JSON.stringify({ version: 1, tasks: [stored] }));
+
+    const store = makeStore();
+
+    expect(store.getState().tasks.items).toEqual([stored]);
+    expect(lastRemovedOf(store)).toBeNull();
+  });
+
+  test("remove saves remaining tasks and keeps the undo snapshot out of storage", () => {
+    const first = task({ id: "task-1", title: "First" });
+    const second = task({ id: "task-2", title: "Second" });
+    const store = makeStore({ tasks: { items: [first, second] } });
+
+    store.dispatch(remove(second.id));
+
+    expect(lastRemovedOf(store)).toEqual({ task: second, index: 1 });
+    expectStorageToMatch([first]);
+    const raw = localStorage.getItem("tickd:tasks");
+    if (raw === null) {
+      throw new Error("tasks were not saved");
+    }
+    expect(JSON.parse(raw)).not.toHaveProperty("lastRemoved");
+  });
+
+  test("restore writes the task back without an undo snapshot", async () => {
+    const first = task({ id: "task-1", title: "First" });
+    const second = task({ id: "task-2", title: "Second" });
+    const store = makeStore({ tasks: { items: [first, second] } });
+    store.dispatch(remove(first.id));
+
+    store.dispatch(await undoAction("restore"));
+
+    expect(store.getState().tasks.items).toEqual([first, second]);
+    expect(lastRemovedOf(store)).toBeNull();
+    expectStorageToMatch([first, second]);
+  });
+
+  test("clearing the undo snapshot does not write storage", async () => {
+    const first = task();
+    const second = task({ id: "task-2", title: "Second" });
+    const store = makeStore({ tasks: { items: [first, second] } });
+    store.dispatch(remove(first.id));
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    const saved = localStorage.getItem("tickd:tasks");
+
+    store.dispatch(await undoAction("clearLastRemoved"));
+
+    expect(setItem).not.toHaveBeenCalled();
+    expect(localStorage.getItem("tickd:tasks")).toBe(saved);
+    expect(store.getState().tasks.items).toEqual([second]);
+    expect(lastRemovedOf(store)).toBeNull();
+  });
 });

@@ -16,7 +16,7 @@ function task(overrides: Partial<Task> = {}): Task {
 
 function stateWith(items: Task[]): RootState {
   return {
-    tasks: { items },
+    tasks: { items, lastRemoved: null },
     persistence: persistenceSlice.getInitialState(),
   };
 }

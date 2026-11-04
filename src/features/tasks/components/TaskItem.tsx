@@ -210,6 +210,7 @@ export function TaskItem({
       <button
         ref={titleRef}
         type="button"
+        data-task-id={task.id}
         onMouseDown={() => onTitleMouseDown(task.id)}
         onDoubleClick={() => onStartEdit(task.id)}
         onKeyDown={handleTitleKeyDown}

@@ -8,11 +8,33 @@ export const rootReducer = combineSlices(tasksSlice, persistenceSlice);
 
 export type RootState = ReturnType<typeof rootReducer>;
 
-export function makeStore(preloadedState?: Partial<RootState>) {
+/** Partial slices for tests — missing task fields are filled with defaults. */
+export type StorePreload = {
+  tasks?: Partial<RootState["tasks"]>;
+  persistence?: Partial<RootState["persistence"]>;
+};
+
+function mergeTasksPreload(
+  tasks: Partial<RootState["tasks"]> | undefined,
+): RootState["tasks"] | undefined {
+  if (tasks === undefined) {
+    return undefined;
+  }
+  return {
+    items: tasks.items ?? [],
+    lastRemoved: tasks.lastRemoved ?? null,
+  };
+}
+
+export function makeStore(preloadedState?: StorePreload) {
   if (preloadedState !== undefined) {
+    const tasks = mergeTasksPreload(preloadedState.tasks);
     return configureStore({
       reducer: rootReducer,
-      preloadedState,
+      preloadedState: {
+        ...preloadedState,
+        ...(tasks === undefined ? {} : { tasks }),
+      } as Partial<RootState>,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().prepend(listenerMiddleware.middleware),
     });
@@ -22,7 +44,7 @@ export function makeStore(preloadedState?: Partial<RootState>) {
   return configureStore({
     reducer: rootReducer,
     preloadedState: {
-      tasks: { items: loaded.tasks },
+      tasks: { items: loaded.tasks, lastRemoved: null },
       persistence: {
         available: loaded.available,
         loadDiscarded: loaded.discarded,
