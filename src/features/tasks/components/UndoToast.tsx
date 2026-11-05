@@ -2,25 +2,11 @@ import { useEffect } from "react";
 import { useStore } from "react-redux";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import type { RootState } from "../../../app/store.ts";
-import { selectVisibleTasks } from "../selectors.ts";
-import { ADD_TASK_INPUT_ID } from "../taskFormIds.ts";
-import { clearLastRemoved, restore } from "../tasksSlice.ts";
+import { restoreDeletedTaskWithFocus } from "../restoreWithFocus.ts";
+import { clearLastRemoved } from "../tasksSlice.ts";
 import { useRouteFilter } from "../useRouteFilter.ts";
 
 const AUTO_HIDE_MS = 5000;
-
-function focusAfterRestore(taskId: string, isVisible: boolean): void {
-  if (isVisible) {
-    const titleButton = document.querySelector<HTMLButtonElement>(
-      `button[data-task-id="${CSS.escape(taskId)}"]`,
-    );
-    if (titleButton !== null) {
-      titleButton.focus();
-      return;
-    }
-  }
-  document.getElementById(ADD_TASK_INPUT_ID)?.focus();
-}
 
 export function UndoToast() {
   const dispatch = useAppDispatch();
@@ -44,17 +30,8 @@ export function UndoToast() {
     return null;
   }
 
-  const snapshot = lastRemoved;
-
   const handleUndo = () => {
-    const taskId = snapshot.task.id;
-    dispatch(restore());
-    queueMicrotask(() => {
-      const visible = selectVisibleTasks(store.getState(), filter).some(
-        (task) => task.id === taskId,
-      );
-      focusAfterRestore(taskId, visible);
-    });
+    restoreDeletedTaskWithFocus(dispatch, () => store.getState(), filter);
   };
 
   return (

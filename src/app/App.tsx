@@ -4,8 +4,10 @@ import { StorageBanner } from "../features/tasks/components/StorageBanner.tsx";
 import { TaskFooter } from "../features/tasks/components/TaskFooter.tsx";
 import { UndoToast } from "../features/tasks/components/UndoToast.tsx";
 import { useAppSelector } from "./hooks.ts";
+import { useTaskHotkeys } from "./useTaskHotkeys.ts";
 
 export function App() {
+  useTaskHotkeys();
   const hasUndoToast = useAppSelector((state) => state.tasks.lastRemoved != null);
 
   return (

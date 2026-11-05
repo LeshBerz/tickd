@@ -358,6 +358,39 @@ test("restores a deleted task between its neighbours", async ({ page }) => {
   await expect(page.getByRole("listitem").nth(2)).toContainText("Charlie");
 });
 
+test("adds a task with n, opens Active with 2, and restores a delete with z", async ({ page }) => {
+  await page.goto("/");
+  const input = page.getByRole("textbox", { name: "Add a task" });
+
+  await page.getByRole("heading", { level: 2, name: "All tasks" }).click();
+  await page.keyboard.press("n");
+  await expect(input).toBeFocused();
+
+  await input.fill("Shortcut task");
+  await input.press("Enter");
+  await expect(page.getByRole("button", { name: "Shortcut task", exact: true })).toBeVisible();
+
+  // Hotkeys do not run while the add field is focused.
+  await page.getByRole("heading", { level: 2, name: "All tasks" }).click();
+  await expect(input).not.toBeFocused();
+  await page.keyboard.press("2");
+
+  await expect(page).toHaveURL("/active");
+  await expect(page.getByRole("heading", { level: 2, name: "Active" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Shortcut task", exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Delete task: Shortcut task" }).click();
+  await expect(page.getByRole("button", { name: "Shortcut task", exact: true })).toHaveCount(0);
+
+  // Deleting the only task returns focus to the add field, which swallows z.
+  await page.getByRole("heading", { level: 2, name: "Active" }).click();
+  await expect(input).not.toBeFocused();
+  await page.keyboard.press("z");
+
+  await expect(page.getByRole("button", { name: "Shortcut task", exact: true })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Task deleted" })).toBeHidden();
+});
+
 test("has no detectable accessibility violations while the undo toast is visible", async ({
   page,
 }) => {

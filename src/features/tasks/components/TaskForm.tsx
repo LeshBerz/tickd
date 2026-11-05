@@ -1,5 +1,6 @@
 import { type Ref, useId, useState } from "react";
-import { useAppDispatch } from "../../../app/hooks.ts";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
+import { selectShowKeyboardHints } from "../../preferences/selectShowKeyboardHints.ts";
 import { ADD_TASK_INPUT_ID } from "../taskFormIds.ts";
 import { add } from "../tasksSlice.ts";
 import { clampTitleLength, normalizePastedTitle, TITLE_MAX_LENGTH } from "../title.ts";
@@ -12,6 +13,7 @@ export function TaskForm({ inputRef }: Props) {
   const [value, setValue] = useState("");
   const [error, setError] = useState(false);
   const dispatch = useAppDispatch();
+  const showHints = useAppSelector(selectShowKeyboardHints);
   const errorId = useId();
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -77,6 +79,17 @@ export function TaskForm({ inputRef }: Props) {
               : "border-border-ui focus-visible:ring-ring"
           }`}
         />
+        {showHints ? (
+          <div className="absolute right-24 mr-2 hidden fine-pointer:block">
+            {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: decorative shortcut hint */}
+            <kbd
+              aria-hidden="true"
+              className="font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm"
+            >
+              N
+            </kbd>
+          </div>
+        ) : null}
         <button
           type="submit"
           className="absolute right-1.5 bg-accent text-accent-text hover:opacity-90 rounded-pill px-4 lg:px-5 py-2 lg:py-2.5 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface lg:focus-visible:ring-offset-bg transition-all motion-reduce:transition-none shadow-sm min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0"

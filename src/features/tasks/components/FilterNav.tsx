@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router";
 import { useAppSelector } from "../../../app/hooks.ts";
+import { selectShowKeyboardHints } from "../../preferences/selectShowKeyboardHints.ts";
 import type { Filter } from "../filter.ts";
 import { FILTERS, filterPaths } from "../filter.ts";
 import { selectTaskCounts } from "../selectors.ts";
@@ -58,8 +59,11 @@ const icons: Record<Filter, ReactNode> = {
   ),
 };
 
+const FILTER_HINT_KEYS = ["1", "2", "3"] as const;
+
 export function FilterNav({ variant }: Props) {
   const counts = useAppSelector(selectTaskCounts);
+  const showHints = useAppSelector(selectShowKeyboardHints);
 
   if (variant === "bar") {
     return (
@@ -83,7 +87,7 @@ export function FilterNav({ variant }: Props) {
 
   return (
     <nav aria-label="Filter tasks" className="flex-1 px-3 flex flex-col gap-1">
-      {FILTERS.map((filter) => (
+      {FILTERS.map((filter, index) => (
         <NavLink
           key={filter}
           to={filterPaths[filter]}
@@ -95,6 +99,15 @@ export function FilterNav({ variant }: Props) {
             {labels[filter]}
           </span>
           <div className="flex items-center relative">
+            {showHints ? (
+              // biome-ignore lint/a11y/noAriaHiddenOnFocusable: decorative shortcut hint
+              <kbd
+                aria-hidden="true"
+                className="hidden fine-pointer:inline-block absolute right-full mr-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity motion-reduce:transition-none font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm"
+              >
+                {FILTER_HINT_KEYS[index]}
+              </kbd>
+            ) : null}
             <span className="bg-border/50 text-text-muted px-2 py-0.5 rounded-pill text-xs">
               {counts[filter]}
             </span>

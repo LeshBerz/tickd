@@ -1,5 +1,6 @@
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
+import { selectShowKeyboardHints } from "../../preferences/selectShowKeyboardHints.ts";
 import type { Filter } from "../filter.ts";
 import { selectTaskCounts, selectVisibleTasks } from "../selectors.ts";
 import { remove, toggle, updateTitle } from "../tasksSlice.ts";
@@ -24,6 +25,7 @@ const NO_MATCH_SUBTITLE: Record<Exclude<Filter, "all">, string> = {
 export function TaskList({ filter, addInputRef }: Props) {
   const tasks = useAppSelector((state) => selectVisibleTasks(state, filter));
   const counts = useAppSelector(selectTaskCounts);
+  const showKeyboardHints = useAppSelector(selectShowKeyboardHints);
   const dispatch = useAppDispatch();
   const checkboxRefs = useRef(new Map<string, HTMLInputElement>());
   const removeRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -207,7 +209,20 @@ export function TaskList({ filter, addInputRef }: Props) {
           />
         </svg>
         <p className="text-xl font-bold text-text">All caught up!</p>
-        <p className="text-base font-medium mt-1">Add your first task above.</p>
+        {showKeyboardHints ? (
+          <p className="text-base font-medium mt-1 hidden fine-pointer:flex items-center justify-center gap-1">
+            Press{" "}
+            <kbd className="font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mx-1">
+              N
+            </kbd>{" "}
+            to add a task.
+          </p>
+        ) : null}
+        <p
+          className={`text-base font-medium mt-1${showKeyboardHints ? " fine-pointer:hidden" : ""}`}
+        >
+          Add your first task above.
+        </p>
       </div>
     );
   }
@@ -242,6 +257,7 @@ export function TaskList({ filter, addInputRef }: Props) {
             editDraftRef.current = value;
           }}
           suppressBlurSaveRef={suppressBlurSaveRef}
+          showKeyboardHints={showKeyboardHints}
         />
       ))}
     </ul>

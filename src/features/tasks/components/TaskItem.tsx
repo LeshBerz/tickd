@@ -19,6 +19,7 @@ type Props = {
   onDraftChange?: (value: string) => void;
   /** Set true before a programmatic exit so the following input blur is ignored. */
   suppressBlurSaveRef?: BlurSuppressRef;
+  showKeyboardHints?: boolean;
 };
 
 const noopBlurSuppressRef: BlurSuppressRef = { current: false };
@@ -37,6 +38,7 @@ export function TaskItem({
   onCancelEdit = () => {},
   onDraftChange = () => {},
   suppressBlurSaveRef = noopBlurSuppressRef,
+  showKeyboardHints = true,
 }: Props) {
   const [editValue, setEditValue] = useState(task.title);
   const [error, setError] = useState(false);
@@ -156,20 +158,22 @@ export function TaskItem({
                 : "border-border-ui focus-visible:ring-ring"
             }`}
           />
-          <span className="hidden fine-pointer:flex text-xs text-text-muted font-bold px-2 mt-2 gap-3">
-            <span className="flex items-center">
-              <kbd className="inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mr-1">
-                Enter
-              </kbd>
-              to save
+          {showKeyboardHints ? (
+            <span className="hidden fine-pointer:flex text-xs text-text-muted font-bold px-2 mt-2 gap-3">
+              <span className="flex items-center">
+                <kbd className="inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mr-1">
+                  Enter
+                </kbd>
+                to save
+              </span>
+              <span className="flex items-center">
+                <kbd className="inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mr-1">
+                  Esc
+                </kbd>
+                to cancel
+              </span>
             </span>
-            <span className="flex items-center">
-              <kbd className="inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mr-1">
-                Esc
-              </kbd>
-              to cancel
-            </span>
-          </span>
+          ) : null}
           <div
             id={errorId}
             aria-live="polite"

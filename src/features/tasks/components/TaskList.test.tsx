@@ -416,4 +416,25 @@ describe("TaskList title editing", () => {
     expect(store.getState().tasks.items[0]?.title).toBe("Saved draft");
     expect(screen.getByRole("button", { name: "Second" })).toBeInTheDocument();
   });
+
+  test("shows Enter and Esc hints while editing when keyboard hints are on", async () => {
+    const { user } = renderApp({ tasks: [task("1")] });
+    const editor = await openTitleEditor(user, "Task 1");
+    const form = editor.closest("form");
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("edit form is missing");
+    }
+
+    const kbds = Array.from(form.querySelectorAll("kbd"));
+    expect(kbds.map((kbd) => kbd.textContent)).toEqual(["Enter", "Esc"]);
+    expect(form).toHaveTextContent("to save");
+    expect(form).toHaveTextContent("to cancel");
+
+    let hint: HTMLElement | null = kbds[0] instanceof HTMLElement ? kbds[0] : null;
+    while (hint !== null && hint !== form && !hint.classList.contains("hidden")) {
+      hint = hint.parentElement;
+    }
+    expect(hint).not.toBeNull();
+    expect(hint?.className ?? "").toMatch(/fine-pointer:/);
+  });
 });

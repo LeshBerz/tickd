@@ -225,4 +225,56 @@ describe("TaskForm", () => {
 
     expect(screen.getByText("Persistent task")).toBeInTheDocument();
   });
+
+  test("shows a decorative N hint beside Add when keyboard hints are on", () => {
+    renderApp({
+      tasks: [{ id: "1", title: "Existing", completed: false, createdAt: 1 }],
+    });
+
+    const form = screen.getByRole("button", { name: "Add" }).closest("form");
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("add form is missing");
+    }
+    const kbd = form.querySelector("kbd");
+    if (!(kbd instanceof HTMLElement)) {
+      throw new Error("add shortcut hint is missing");
+    }
+    const addButton = screen.getByRole("button", { name: "Add" });
+
+    expect(kbd.textContent).toBe("N");
+    expect(kbd).toHaveAttribute("aria-hidden", "true");
+    expect(kbd.compareDocumentPosition(addButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(elementHidesUntilFinePointer(kbd, form)).toBe(true);
+  });
 });
+
+function elementHidesUntilFinePointer(element: Element, root: Element): boolean {
+  let current: Element | null = element;
+  while (current !== null) {
+    const tokens = (current.getAttribute("class") ?? "")
+      .split(/\s+/)
+      .filter((token) => token !== "");
+    const shownOnFinePointer = tokens.some((token) => {
+      if (token.includes("group-hover:") || token.includes("group-focus")) {
+        return false;
+      }
+      const marker = "fine-pointer:";
+      const index = token.lastIndexOf(marker);
+      if (index === -1) {
+        return false;
+      }
+      const variant = token.slice(index + marker.length);
+      return variant !== "" && !variant.startsWith("hidden");
+    });
+    if (tokens.includes("hidden") && shownOnFinePointer) {
+      return true;
+    }
+    if (current === root) {
+      break;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}

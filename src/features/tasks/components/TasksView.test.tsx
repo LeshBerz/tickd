@@ -63,6 +63,20 @@ describe("TasksView empty states", () => {
     expect(screen.getByText("Add your first task above.")).toBeInTheDocument();
   });
 
+  test("shows Press N and the coarse empty copy together when hints are on", () => {
+    renderApp({ tasks: [] });
+
+    const coarse = screen.getByText("Add your first task above.");
+    expect(coarse).toHaveClass("fine-pointer:hidden");
+    expect(coarse).not.toHaveClass("hidden");
+    expect(coarse.querySelector("kbd")).toBeNull();
+
+    const press = pressHint();
+    expect(press).not.toBe(coarse);
+    expect(press.querySelector("kbd")?.textContent).toBe("N");
+    expect(chainHidesUntilFinePointer(press)).toBe(true);
+  });
+
   test.each([
     ["/active", "No active tasks."],
     ["/completed", "No completed tasks."],
@@ -78,6 +92,72 @@ describe("TasksView empty states", () => {
     expect(screen.queryByText("Hidden task")).not.toBeInTheDocument();
   });
 });
+
+const PRESS_HINT = "Press N to add a task.";
+
+function normalizedText(element: Element): string {
+  return (element.textContent ?? "").replace(/\s+/g, " ").trim();
+}
+
+function pressHint(): HTMLElement {
+  const hosts: HTMLElement[] = [];
+  for (const kbd of document.querySelectorAll("kbd")) {
+    if (normalizedText(kbd) !== "N") {
+      continue;
+    }
+    let match: HTMLElement | null = null;
+    let current: Element | null = kbd;
+    while (current instanceof HTMLElement) {
+      if (normalizedText(current) === PRESS_HINT) {
+        match = current;
+        break;
+      }
+      current = current.parentElement;
+    }
+    if (match !== null && !hosts.includes(match)) {
+      hosts.push(match);
+    }
+  }
+  expect(hosts).toHaveLength(1);
+  const host = hosts[0];
+  if (host === undefined) {
+    throw new Error("Press N hint is missing");
+  }
+  return host;
+}
+
+function chainHidesUntilFinePointer(host: HTMLElement): boolean {
+  const kbd = host.querySelector("kbd");
+  if (!(kbd instanceof HTMLElement)) {
+    return false;
+  }
+  let current: HTMLElement | null = kbd;
+  while (current !== null) {
+    const tokens = (current.getAttribute("class") ?? "")
+      .split(/\s+/)
+      .filter((token) => token !== "");
+    const shownOnFinePointer = tokens.some((token) => {
+      if (token.includes("group-hover:") || token.includes("group-focus")) {
+        return false;
+      }
+      const marker = "fine-pointer:";
+      const index = token.lastIndexOf(marker);
+      if (index === -1) {
+        return false;
+      }
+      const variant = token.slice(index + marker.length);
+      return variant !== "" && !variant.startsWith("hidden");
+    });
+    if (tokens.includes("hidden") && shownOnFinePointer) {
+      return true;
+    }
+    if (current === host) {
+      break;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
 
 function clearCompletedButton(): HTMLElement {
   const [button] = screen.getAllByRole("button", { name: "Clear completed" });
