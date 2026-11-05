@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import { requestListFocus } from "../detailFocus.ts";
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function TaskDetailPanel({ taskId }: Props) {
+  const { t } = useTranslation();
   const task = useAppSelector((state) => selectTaskById(state, taskId));
   const filter = useRouteFilter();
   const dispatch = useAppDispatch();
@@ -54,7 +56,7 @@ export function TaskDetailPanel({ taskId }: Props) {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Back to list
+        {t("detail.back")}
       </button>
 
       <h2
@@ -71,14 +73,14 @@ export function TaskDetailPanel({ taskId }: Props) {
           htmlFor={notesId}
           className="text-xs font-bold text-text-muted uppercase tracking-wider"
         >
-          Notes
+          {t("detail.notes")}
         </label>
         <textarea
           id={notesId}
           name="notes"
           value={task.notes}
           maxLength={NOTES_MAX_LENGTH}
-          placeholder="Add notes..."
+          placeholder={t("detail.notesPlaceholder")}
           onChange={(event) => {
             dispatch(updateNotes(task.id, clampNotesLength(event.target.value)));
           }}

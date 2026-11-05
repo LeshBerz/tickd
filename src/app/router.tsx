@@ -1,8 +1,10 @@
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
+import { SettingsView } from "../features/preferences/components/SettingsView.tsx";
 import { TasksLayout } from "../features/tasks/components/TasksLayout.tsx";
 import { TasksView } from "../features/tasks/components/TasksView.tsx";
 import { FILTERS, filterPaths } from "../features/tasks/filter.ts";
 import { App } from "./App.tsx";
+import { SETTINGS_PATH } from "./paths.ts";
 
 const DETAIL_ROUTE = "tasks/:id";
 
@@ -32,6 +34,7 @@ export const routes: RouteObject[] = [
     element: <App />,
     children: [
       { element: <TasksLayout />, children: filterChildren },
+      { path: SETTINGS_PATH.slice(1), element: <SettingsView /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

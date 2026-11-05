@@ -1,10 +1,13 @@
 import { combineSlices, configureStore } from "@reduxjs/toolkit";
+import { preferencesSlice } from "../features/preferences/preferencesSlice.ts";
+import { DEFAULT_PREFERENCES } from "../features/preferences/schema.ts";
+import { loadPreferences } from "../features/preferences/storage.ts";
 import { loadTasks } from "../features/tasks/storage.ts";
 import { tasksSlice } from "../features/tasks/tasksSlice.ts";
 import { listenerMiddleware } from "./listeners.ts";
 import { persistenceSlice } from "./persistenceSlice.ts";
 
-export const rootReducer = combineSlices(tasksSlice, persistenceSlice);
+export const rootReducer = combineSlices(tasksSlice, persistenceSlice, preferencesSlice);
 
 export type RootState = ReturnType<typeof rootReducer>;
 
@@ -12,6 +15,7 @@ export type RootState = ReturnType<typeof rootReducer>;
 export type StorePreload = {
   tasks?: Partial<RootState["tasks"]>;
   persistence?: Partial<RootState["persistence"]>;
+  preferences?: Partial<RootState["preferences"]>;
 };
 
 function mergeTasksPreload(
@@ -26,6 +30,12 @@ function mergeTasksPreload(
   };
 }
 
+function mergePreferencesPreload(
+  preferences: Partial<RootState["preferences"]> | undefined,
+): RootState["preferences"] {
+  return { ...DEFAULT_PREFERENCES, ...preferences };
+}
+
 export function makeStore(preloadedState?: StorePreload) {
   if (preloadedState !== undefined) {
     const tasks = mergeTasksPreload(preloadedState.tasks);
@@ -34,6 +44,7 @@ export function makeStore(preloadedState?: StorePreload) {
       preloadedState: {
         ...preloadedState,
         ...(tasks === undefined ? {} : { tasks }),
+        preferences: mergePreferencesPreload(preloadedState.preferences),
       } as Partial<RootState>,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().prepend(listenerMiddleware.middleware),
@@ -51,6 +62,7 @@ export function makeStore(preloadedState?: StorePreload) {
         saveError: null,
         availabilityDismissed: false,
       },
+      preferences: loadPreferences(),
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().prepend(listenerMiddleware.middleware),

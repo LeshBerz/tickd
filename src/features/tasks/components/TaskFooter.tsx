@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useStore } from "react-redux";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import type { RootState } from "../../../app/store.ts";
@@ -19,6 +20,7 @@ const VARIANT_CLASS: Record<Props["variant"], string> = {
 };
 
 export function TaskFooter({ variant }: Props): React.JSX.Element | null {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
   const filter = useRouteFilter();
@@ -51,7 +53,7 @@ export function TaskFooter({ variant }: Props): React.JSX.Element | null {
         onClick={handleClear}
         className={CLEAR_BUTTON_CLASS}
       >
-        Clear completed
+        {t("tasks.clearCompleted")}
       </button>
     </footer>
   );

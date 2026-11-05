@@ -1,4 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
+import { setAccent, setTheme } from "../features/preferences/preferencesSlice.ts";
+import { DEFAULT_PREFERENCES } from "../features/preferences/schema.ts";
+import { PREFERENCES_STORAGE_KEY } from "../features/preferences/storage.ts";
 import type { Task } from "../features/tasks/schema.ts";
 import { add, remove, toggle } from "../features/tasks/tasksSlice.ts";
 import { makeStore } from "./store.ts";
@@ -238,6 +241,81 @@ test("keeps preloaded persistence when tasks are passed in", () => {
   expect(store.getState().tasks.items).toEqual([]);
   expect(persistenceFrom(store).loadDiscarded).toBe(false);
   expect(localStorage.getItem("tickd:tasks")).toBe("{not json");
+});
+
+describe("preference persistence is separate from task persistence", () => {
+  test("saving a preference does not touch the tasks key", () => {
+    const store = makeStore({ tasks: { items: [task()] } });
+
+    store.dispatch(setTheme("dark"));
+
+    expect(localStorage.getItem("tickd:tasks")).toBeNull();
+    expect(JSON.parse(localStorage.getItem(PREFERENCES_STORAGE_KEY) ?? "null")).toMatchObject({
+      version: 1,
+      theme: "dark",
+    });
+  });
+
+  test("saving a task does not touch the preferences key", () => {
+    const store = makeStore({
+      tasks: { items: [] },
+      preferences: { theme: "light" },
+    });
+
+    store.dispatch(add("New task"));
+
+    expect(localStorage.getItem(PREFERENCES_STORAGE_KEY)).toBeNull();
+    expectStorageToMatch(store.getState().tasks.items);
+  });
+
+  test("a failing preference write leaves task persistence healthy", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const store = makeStore({ tasks: { items: [] } });
+    const original = Storage.prototype.setItem;
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+      this: Storage,
+      key: string,
+      value: string,
+    ) {
+      if (key === PREFERENCES_STORAGE_KEY) {
+        throw new DOMException("Quota exceeded", "QuotaExceededError");
+      }
+      original.call(this, key, value);
+    });
+
+    store.dispatch(setAccent("violet"));
+
+    const persistence = persistenceFrom(store);
+    expect(persistence.saveError).toBeNull();
+
+    store.dispatch(add("Still saved"));
+
+    expectStorageToMatch(store.getState().tasks.items);
+    expect(setItem).toHaveBeenCalledWith("tickd:tasks", expect.any(String));
+  });
+
+  test("a store created without preload reads preferences from their own key", () => {
+    localStorage.setItem(
+      PREFERENCES_STORAGE_KEY,
+      JSON.stringify({ version: 1, theme: "dark", language: "ru" }),
+    );
+
+    const store = makeStore();
+
+    expect(store.getState().preferences).toMatchObject({ theme: "dark", language: "ru" });
+    expect(localStorage.getItem("tickd:tasks")).toBeNull();
+  });
+
+  test("corrupted preferences fall back to defaults without a storage banner", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    localStorage.setItem(PREFERENCES_STORAGE_KEY, "{not json");
+
+    const store = makeStore();
+
+    expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
+    expect(persistenceFrom(store)).toMatchObject({ available: true, loadDiscarded: false });
+    expect(localStorage.getItem(PREFERENCES_STORAGE_KEY)).toBe("{not json");
+  });
 });
 
 type UndoAction = { type: string };

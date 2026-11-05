@@ -19,6 +19,13 @@
   --color-border-ui: var(--theme-border-ui);
   --color-ring: var(--theme-ring);
 
+  /* Palette swatches for the settings picker (independent of the active accent). */
+  --color-swatch-teal: var(--swatch-teal);
+  --color-swatch-blue: var(--swatch-blue);
+  --color-swatch-violet: var(--swatch-violet);
+  --color-swatch-amber: var(--swatch-amber);
+  --color-swatch-rose: var(--swatch-rose);
+
   /* The self-hosted variable font registers as "Nunito Variable". */
   --font-soft: "Nunito Variable", "Nunito", sans-serif;
 
@@ -28,6 +35,7 @@
 }
 
 :root {
+  color-scheme: light;
   --theme-bg: #f5f4f1;
   --theme-surface: #ffffff;
   --theme-sidebar: #f5f4f1;
@@ -41,9 +49,17 @@
   --theme-border: #e7e5e4;
   --theme-border-ui: #78716c;
   --theme-ring: #0f766e;
+
+  /* Accent palette swatches, identical to the accents applied by `data-accent`. */
+  --swatch-teal: #0f766e;
+  --swatch-blue: #1d4ed8;
+  --swatch-violet: #5b21b6;
+  --swatch-amber: #92400e;
+  --swatch-rose: #9f1239;
 }
 
 .dark {
+  color-scheme: dark;
   --theme-bg: #1c1917;
   --theme-surface: #292524;
   --theme-sidebar: #1c1917;
@@ -57,6 +73,68 @@
   --theme-border: #44403c;
   --theme-border-ui: #a8a29e;
   --theme-ring: #2dd4bf;
+}
+
+/* Accent palettes. Every pair below is verified for WCAG AA contrast in
+   src/features/preferences/palettes.test.ts — do not change a value alone. */
+[data-accent="teal"] {
+  --theme-accent: #0f766e;
+  --theme-accent-text: #ffffff;
+  --theme-ring: #0f766e;
+}
+
+[data-accent="blue"] {
+  --theme-accent: #1d4ed8;
+  --theme-accent-text: #ffffff;
+  --theme-ring: #1d4ed8;
+}
+
+[data-accent="violet"] {
+  --theme-accent: #5b21b6;
+  --theme-accent-text: #ffffff;
+  --theme-ring: #5b21b6;
+}
+
+[data-accent="amber"] {
+  --theme-accent: #92400e;
+  --theme-accent-text: #ffffff;
+  --theme-ring: #92400e;
+}
+
+[data-accent="rose"] {
+  --theme-accent: #9f1239;
+  --theme-accent-text: #ffffff;
+  --theme-ring: #9f1239;
+}
+
+.dark[data-accent="teal"] {
+  --theme-accent: #2dd4bf;
+  --theme-accent-text: #042f2e;
+  --theme-ring: #2dd4bf;
+}
+
+.dark[data-accent="blue"] {
+  --theme-accent: #93c5fd;
+  --theme-accent-text: #172554;
+  --theme-ring: #93c5fd;
+}
+
+.dark[data-accent="violet"] {
+  --theme-accent: #c4b5fd;
+  --theme-accent-text: #2e1065;
+  --theme-ring: #c4b5fd;
+}
+
+.dark[data-accent="amber"] {
+  --theme-accent: #fcd34d;
+  --theme-accent-text: #451a03;
+  --theme-ring: #fcd34d;
+}
+
+.dark[data-accent="rose"] {
+  --theme-accent: #fda4af;
+  --theme-accent-text: #4c0519;
+  --theme-ring: #fda4af;
 }
 
 @media (max-width: 1023px) {

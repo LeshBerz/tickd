@@ -1,4 +1,5 @@
 import { type Ref, useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Task } from "../schema.ts";
 import { clampTitleLength, normalizePastedTitle, TITLE_MAX_LENGTH } from "../title.ts";
 
@@ -48,6 +49,7 @@ export function TaskItem({
   suppressBlurSaveRef = noopBlurSuppressRef,
   showKeyboardHints = true,
 }: Props) {
+  const { t } = useTranslation();
   const [editValue, setEditValue] = useState(task.title);
   const [error, setError] = useState(false);
   const [wasEditing, setWasEditing] = useState(isEditing);
@@ -188,7 +190,7 @@ export function TaskItem({
       <li className="bg-card border-2 border-accent shadow-md rounded-card p-3 flex flex-col gap-2 transition-colors motion-reduce:transition-none">
         <form className="flex-1 flex flex-col w-full relative" onSubmit={handleEditSubmit}>
           <label htmlFor={editInputId} className="sr-only">
-            Edit task
+            {t("tasks.editLabel")}
           </label>
           <input
             ref={editInputRef}
@@ -215,13 +217,13 @@ export function TaskItem({
                 <kbd className="inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mr-1">
                   Enter
                 </kbd>
-                to save
+                {t("tasks.editSaveHint")}
               </span>
               <span className="flex items-center">
                 <kbd className="inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mr-1">
                   Esc
                 </kbd>
-                to cancel
+                {t("tasks.editCancelHint")}
               </span>
             </span>
           ) : null}
@@ -230,7 +232,7 @@ export function TaskItem({
             aria-live="polite"
             className="text-danger text-sm font-bold mt-2 ml-1 empty:mt-0"
           >
-            {error ? "Task can't be empty" : ""}
+            {error ? t("tasks.emptyLabel") : ""}
           </div>
         </form>
       </li>
@@ -246,7 +248,7 @@ export function TaskItem({
           className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
           checked={task.completed}
           onChange={() => onToggle(task.id)}
-          aria-label={`Mark ${task.title} as completed`}
+          aria-label={t("tasks.toggleLabel", { title: task.title })}
         />
         <div className="pointer-events-none w-7 h-7 rounded-full border-2 border-border-ui peer-checked:bg-accent peer-checked:border-accent peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-card transition-all motion-reduce:transition-none flex items-center justify-center">
           <svg
@@ -280,7 +282,7 @@ export function TaskItem({
       <button
         ref={removeRef}
         type="button"
-        aria-label={`Delete task: ${task.title}`}
+        aria-label={t("tasks.deleteLabel", { title: task.title })}
         onClick={() => onRemove(task.id)}
         className="opacity-100 lg:opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 text-text-muted hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:text-danger rounded-full p-2 transition-all motion-reduce:transition-none flex items-center justify-center min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px]"
       >

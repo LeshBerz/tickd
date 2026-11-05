@@ -1,20 +1,22 @@
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { Filter } from "../filter.ts";
 import { useRouteFilter } from "../useRouteFilter.ts";
 import { TaskFooter } from "./TaskFooter.tsx";
 import { TaskForm } from "./TaskForm.tsx";
 import { TaskList } from "./TaskList.tsx";
 
-const VIEW_TITLES: Record<Filter, string> = {
-  all: "All tasks",
-  active: "Active",
-  completed: "Completed",
+const VIEW_TITLE_KEYS: Record<Filter, string> = {
+  all: "tasks.titleAll",
+  active: "tasks.titleActive",
+  completed: "tasks.titleCompleted",
 };
 
 export function TasksView() {
+  const { t } = useTranslation();
   const filter = useRouteFilter();
   const addInputRef = useRef<HTMLInputElement>(null);
-  const title = VIEW_TITLES[filter];
+  const title = t(VIEW_TITLE_KEYS[filter]);
 
   return (
     <>

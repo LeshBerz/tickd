@@ -1,4 +1,5 @@
 import { type RefObject, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import { selectShowKeyboardHints } from "../../preferences/selectShowKeyboardHints.ts";
@@ -18,12 +19,13 @@ type PendingFocus =
   | { kind: "title"; id: string }
   | { kind: "input" };
 
-const NO_MATCH_SUBTITLE: Record<Exclude<Filter, "all">, string> = {
-  active: "No active tasks.",
-  completed: "No completed tasks.",
+const NO_MATCH_SUBTITLE_KEYS: Record<Exclude<Filter, "all">, string> = {
+  active: "tasks.noActive",
+  completed: "tasks.noCompleted",
 };
 
 export function TaskList({ filter, addInputRef }: Props) {
+  const { t } = useTranslation();
   const tasks = useAppSelector((state) => selectVisibleTasks(state, filter));
   const counts = useAppSelector(selectTaskCounts);
   const showKeyboardHints = useAppSelector(selectShowKeyboardHints);
@@ -214,30 +216,30 @@ export function TaskList({ filter, addInputRef }: Props) {
             d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <p className="text-xl font-bold text-text">All caught up!</p>
+        <p className="text-xl font-bold text-text">{t("tasks.emptyTitle")}</p>
         {showKeyboardHints ? (
           <p className="text-base font-medium mt-1 hidden fine-pointer:flex items-center justify-center gap-1">
-            Press{" "}
+            {t("tasks.emptyHintBefore")}{" "}
             <kbd className="font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm mx-1">
               N
-            </kbd>{" "}
-            to add a task.
+            </kbd>
+            {t("tasks.emptyHintAfter")}
           </p>
         ) : null}
         <p
           className={`text-base font-medium mt-1${showKeyboardHints ? " fine-pointer:hidden" : ""}`}
         >
-          Add your first task above.
+          {t("tasks.emptyFallback")}
         </p>
       </div>
     );
   }
 
   if (tasks.length === 0) {
-    const subtitle = filter === "all" ? "" : NO_MATCH_SUBTITLE[filter];
+    const subtitle = filter === "all" ? "" : t(NO_MATCH_SUBTITLE_KEYS[filter]);
     return (
       <div className="flex flex-col items-center justify-center text-center py-12 text-text-muted">
-        <p className="text-xl font-bold text-text">Nothing here</p>
+        <p className="text-xl font-bold text-text">{t("tasks.nothingTitle")}</p>
         <p className="text-base font-medium mt-1">{subtitle}</p>
       </div>
     );

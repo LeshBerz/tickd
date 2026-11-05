@@ -37,6 +37,14 @@ test("renders the responsive application shell", () => {
   expect(screen.getByRole("heading", { level: 2, name: "All tasks" })).toBeInTheDocument();
 });
 
+test("hides the mobile task filters on the settings route", () => {
+  renderApp({ path: "/settings" });
+
+  expect(screen.getByRole("heading", { level: 2, name: "Settings" })).toBeInTheDocument();
+  // The desktop sidebar keeps its filter navigation; the mobile filter bar is omitted.
+  expect(screen.getAllByRole("navigation", { name: "Filter tasks" })).toHaveLength(1);
+});
+
 test("shows a discarded-load banner above the view and starts fresh", () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   localStorage.setItem("tickd:tasks", "{not json");

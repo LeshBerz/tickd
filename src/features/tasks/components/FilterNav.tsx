@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router";
 import { useAppSelector } from "../../../app/hooks.ts";
 import { selectShowKeyboardHints } from "../../preferences/selectShowKeyboardHints.ts";
@@ -10,10 +11,10 @@ type Props = {
   variant: "sidebar" | "bar";
 };
 
-const labels: Record<Filter, string> = {
-  all: "All",
-  active: "Active",
-  completed: "Completed",
+const LABEL_KEYS: Record<Filter, string> = {
+  all: "nav.all",
+  active: "nav.active",
+  completed: "nav.completed",
 };
 
 const icons: Record<Filter, ReactNode> = {
@@ -62,13 +63,14 @@ const icons: Record<Filter, ReactNode> = {
 const FILTER_HINT_KEYS = ["1", "2", "3"] as const;
 
 export function FilterNav({ variant }: Props) {
+  const { t } = useTranslation();
   const counts = useAppSelector(selectTaskCounts);
   const showHints = useAppSelector(selectShowKeyboardHints);
 
   if (variant === "bar") {
     return (
       <nav
-        aria-label="Filter tasks"
+        aria-label={t("nav.filterLabel")}
         className="flex p-1 bg-bg rounded-pill border border-border shadow-inner w-full max-w-full"
       >
         {FILTERS.map((filter) => (
@@ -78,7 +80,7 @@ export function FilterNav({ variant }: Props) {
             end
             className="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-pill font-bold transition-all motion-reduce:transition-none aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] truncate flex items-center justify-center"
           >
-            {labels[filter]}
+            {t(LABEL_KEYS[filter])}
           </NavLink>
         ))}
       </nav>
@@ -86,7 +88,7 @@ export function FilterNav({ variant }: Props) {
   }
 
   return (
-    <nav aria-label="Filter tasks" className="flex-1 px-3 flex flex-col gap-1">
+    <nav aria-label={t("nav.filterLabel")} className="flex-1 px-3 flex flex-col gap-1">
       {FILTERS.map((filter, index) => (
         <NavLink
           key={filter}
@@ -96,7 +98,7 @@ export function FilterNav({ variant }: Props) {
         >
           <span className="flex items-center gap-3">
             {icons[filter]}
-            {labels[filter]}
+            {t(LABEL_KEYS[filter])}
           </span>
           <div className="flex items-center relative">
             {showHints ? (

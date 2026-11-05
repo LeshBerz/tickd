@@ -1,10 +1,8 @@
 import { screen, within } from "@testing-library/react";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 import { renderApp } from "../../../test/renderApp.tsx";
 
-vi.mock("../../preferences/selectShowKeyboardHints.ts", () => ({
-  selectShowKeyboardHints: () => false,
-}));
+const HINTS_OFF = { showKeyboardHints: false };
 
 function filterNav(variant: "sidebar" | "bar"): HTMLElement {
   const name = variant === "sidebar" ? /^All \d+$/ : /^All$/;
@@ -18,9 +16,9 @@ function filterNav(variant: "sidebar" | "bar"): HTMLElement {
 }
 
 test("hides Press N, the add hint, and filter numbers when keyboard hints are off", () => {
-  renderApp({ tasks: [] });
+  renderApp({ tasks: [], preferences: HINTS_OFF });
 
-  expect(screen.queryByText("Press N to add a task.")).not.toBeInTheDocument();
+  expect(screen.queryByText(/Press/)).not.toBeInTheDocument();
   const coarse = screen.getByText("Add your first task above.");
   expect(coarse).not.toHaveClass("fine-pointer:hidden");
 
@@ -33,6 +31,7 @@ test("hides Press N, the add hint, and filter numbers when keyboard hints are of
 test("hides Enter and Esc hints while editing when keyboard hints are off", async () => {
   const { user } = renderApp({
     tasks: [{ id: "1", title: "Task 1", completed: false, createdAt: 1, notes: "" }],
+    preferences: HINTS_OFF,
   });
 
   await user.dblClick(screen.getByRole("button", { name: "Task 1" }));

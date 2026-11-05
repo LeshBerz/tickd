@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { persistenceSlice } from "../../app/persistenceSlice.ts";
 import type { RootState } from "../../app/store.ts";
+import { preferencesSlice } from "../preferences/preferencesSlice.ts";
 import type { Task } from "./schema.ts";
 import { selectTaskById, selectTaskCounts, selectTasks, selectVisibleTasks } from "./selectors.ts";
 
@@ -19,6 +20,7 @@ function stateWith(items: Task[]): RootState {
   return {
     tasks: { items, lastRemoved: null },
     persistence: persistenceSlice.getInitialState(),
+    preferences: preferencesSlice.getInitialState(),
   };
 }
 

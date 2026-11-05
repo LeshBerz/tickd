@@ -1,4 +1,5 @@
 import { type Ref, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import { selectShowKeyboardHints } from "../../preferences/selectShowKeyboardHints.ts";
 import { ADD_TASK_INPUT_ID } from "../taskFormIds.ts";
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function TaskForm({ inputRef }: Props) {
+  const { t } = useTranslation();
   const [value, setValue] = useState("");
   const [error, setError] = useState(false);
   const dispatch = useAppDispatch();
@@ -58,7 +60,7 @@ export function TaskForm({ inputRef }: Props) {
   return (
     <form className="mb-6 relative" onSubmit={handleSubmit}>
       <label htmlFor={ADD_TASK_INPUT_ID} className="sr-only">
-        Add a task
+        {t("tasks.addLabel")}
       </label>
       <div className="relative flex items-center">
         <input
@@ -70,7 +72,7 @@ export function TaskForm({ inputRef }: Props) {
           maxLength={TITLE_MAX_LENGTH}
           onChange={handleChange}
           onPaste={handlePaste}
-          placeholder="Add a task..."
+          placeholder={t("tasks.addPlaceholder")}
           aria-describedby={error ? errorId : undefined}
           aria-invalid={error ? "true" : undefined}
           className={`w-full bg-surface lg:bg-bg border-2 rounded-pill py-3 lg:py-3.5 pl-5 lg:pl-6 pr-20 lg:pr-28 text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:border-transparent transition-all motion-reduce:transition-none font-medium ${
@@ -94,7 +96,7 @@ export function TaskForm({ inputRef }: Props) {
           type="submit"
           className="absolute right-1.5 bg-accent text-accent-text hover:opacity-90 rounded-pill px-4 lg:px-5 py-2 lg:py-2.5 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface lg:focus-visible:ring-offset-bg transition-all motion-reduce:transition-none shadow-sm min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0"
         >
-          Add
+          {t("tasks.add")}
         </button>
       </div>
       {value.length > 0 ? (
@@ -112,7 +114,7 @@ export function TaskForm({ inputRef }: Props) {
         aria-live="polite"
         className="text-danger text-sm font-bold mt-2 ml-4 empty:mt-0"
       >
-        {error ? "Task can't be empty" : ""}
+        {error ? t("tasks.emptyLabel") : ""}
       </div>
     </form>
   );

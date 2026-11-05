@@ -1,4 +1,5 @@
 import { createListenerMiddleware } from "@reduxjs/toolkit";
+import { savePreferences } from "../features/preferences/storage.ts";
 import { saveTasks } from "../features/tasks/storage.ts";
 import { clearSaveError, reportSaveError } from "./persistenceSlice.ts";
 import type { AppDispatch, RootState } from "./store.ts";
@@ -26,5 +27,17 @@ startAppListening({
       return;
     }
     listenerApi.dispatch(reportSaveError(result === "quota" ? "quota" : "unavailable"));
+  },
+});
+
+/**
+ * Preferences live under their own key and never touch task persistence:
+ * a failing preference write must not raise task storage errors.
+ */
+startAppListening({
+  predicate: (_action, currentState, previousState) =>
+    currentState.preferences !== previousState.preferences,
+  effect: (_action, listenerApi) => {
+    savePreferences(listenerApi.getState().preferences);
   },
 });
