@@ -1,14 +1,15 @@
 import { Outlet } from "react-router";
 import { FilterNav } from "../features/tasks/components/FilterNav.tsx";
-import { StorageBanner } from "../features/tasks/components/StorageBanner.tsx";
 import { TaskFooter } from "../features/tasks/components/TaskFooter.tsx";
 import { UndoToast } from "../features/tasks/components/UndoToast.tsx";
+import { useRouteTaskId } from "../features/tasks/useRouteTaskId.ts";
 import { useAppSelector } from "./hooks.ts";
 import { useTaskHotkeys } from "./useTaskHotkeys.ts";
 
 export function App() {
   useTaskHotkeys();
   const hasUndoToast = useAppSelector((state) => state.tasks.lastRemoved != null);
+  const hasDetail = useRouteTaskId() !== null;
 
   return (
     <div
@@ -33,13 +34,8 @@ export function App() {
       </aside>
 
       <main className="flex-1 flex flex-col bg-bg lg:bg-surface relative lg:overflow-hidden">
-        <div className="flex-1 lg:overflow-y-auto flex flex-col items-center lg:items-start w-full lg:pl-16 xl:pl-24 lg:pr-8">
-          <div className="w-full max-w-[44rem] flex flex-col min-h-full px-4 lg:px-0 py-6 lg:py-10">
-            <StorageBanner />
-            <Outlet />
-          </div>
-        </div>
-        <TaskFooter variant="mobile" />
+        <Outlet />
+        {hasDetail ? null : <TaskFooter variant="mobile" />}
         <UndoToast />
       </main>
     </div>

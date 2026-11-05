@@ -10,6 +10,7 @@ function task(overrides: Partial<Task> = {}): Task {
     title: "Write tests",
     completed: false,
     createdAt: 1,
+    notes: "",
     ...overrides,
   };
 }

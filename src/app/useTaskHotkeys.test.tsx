@@ -6,7 +6,7 @@ import { renderApp } from "../test/renderApp.tsx";
 type AppUser = ReturnType<typeof renderApp>["user"];
 
 function task(id: string, completed = false): Task {
-  return { id, title: `Task ${id}`, completed, createdAt: Number(id) };
+  return { id, title: `Task ${id}`, completed, createdAt: Number(id), notes: "" };
 }
 
 function focusBody(): void {

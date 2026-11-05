@@ -6,13 +6,40 @@ type SeedTask = {
   title: string;
   completed: boolean;
   createdAt: number;
+  notes?: string;
 };
 
 async function seedTasks(page: Page, tasks: SeedTask[]) {
   await page.addInitScript((items) => {
+    localStorage.setItem(
+      "tickd:tasks",
+      JSON.stringify({
+        version: 2,
+        tasks: items.map((item) => ({ ...item, notes: item.notes ?? "" })),
+      }),
+    );
+  }, tasks);
+}
+
+/** Version 1 payload without a `notes` field — exercises the storage migration. */
+async function seedLegacyTasks(
+  page: Page,
+  tasks: { id: string; title: string; completed: boolean; createdAt: number }[],
+) {
+  await page.addInitScript((items) => {
     localStorage.setItem("tickd:tasks", JSON.stringify({ version: 1, tasks: items }));
   }, tasks);
 }
+
+test("opens a task migrated from a version 1 payload with empty notes", async ({ page }) => {
+  await seedLegacyTasks(page, [
+    { id: "legacy", title: "Legacy task", completed: false, createdAt: 1 },
+  ]);
+  await page.goto("/tasks/legacy");
+
+  await expect(page.getByRole("heading", { level: 2, name: "Legacy task" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Notes" })).toHaveValue("");
+});
 
 function visibleText(page: Page, text: string) {
   return page.getByText(text, { exact: true }).filter({ visible: true });
@@ -311,7 +338,7 @@ test("stays in edit and shows an error when Enter is pressed on an empty title",
 
   const stored = await page.evaluate(() => localStorage.getItem("tickd:tasks"));
   expect(JSON.parse(stored ?? "null")).toMatchObject({
-    version: 1,
+    version: 2,
     tasks: [{ id: "edit", title: "Keep title", completed: false }],
   });
 });

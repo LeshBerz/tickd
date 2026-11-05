@@ -32,7 +32,7 @@ test("hides Press N, the add hint, and filter numbers when keyboard hints are of
 
 test("hides Enter and Esc hints while editing when keyboard hints are off", async () => {
   const { user } = renderApp({
-    tasks: [{ id: "1", title: "Task 1", completed: false, createdAt: 1 }],
+    tasks: [{ id: "1", title: "Task 1", completed: false, createdAt: 1, notes: "" }],
   });
 
   await user.dblClick(screen.getByRole("button", { name: "Task 1" }));

@@ -4,7 +4,7 @@ import { renderApp } from "../../../test/renderApp.tsx";
 import type { Task } from "../schema.ts";
 
 function task(id: string, completed = false): Task {
-  return { id, title: `Task ${id}`, completed, createdAt: Number(id) };
+  return { id, title: `Task ${id}`, completed, createdAt: Number(id), notes: "" };
 }
 
 type AppUser = ReturnType<typeof renderApp>["user"];
@@ -124,10 +124,10 @@ describe("TaskList titles", () => {
     const longTitle = "c".repeat(200);
     renderApp({
       tasks: [
-        { id: "emoji", title: "👋", completed: false, createdAt: 1 },
-        { id: "hebrew", title: "משימה", completed: false, createdAt: 2 },
-        { id: "arabic", title: "مهمة", completed: false, createdAt: 3 },
-        { id: "long", title: longTitle, completed: false, createdAt: 4 },
+        { id: "emoji", title: "👋", completed: false, createdAt: 1, notes: "" },
+        { id: "hebrew", title: "משימה", completed: false, createdAt: 2, notes: "" },
+        { id: "arabic", title: "مهمة", completed: false, createdAt: 3, notes: "" },
+        { id: "long", title: longTitle, completed: false, createdAt: 4, notes: "" },
       ],
     });
 
@@ -166,16 +166,17 @@ describe("TaskList title editing", () => {
   });
 
   test("does not edit a task when its title is clicked once", async () => {
-    const { user } = renderApp({ tasks: [task("1")] });
+    const { router, user } = renderApp({ tasks: [task("1")] });
 
     await user.click(screen.getByRole("button", { name: "Task 1" }));
 
     expect(screen.queryByRole("textbox", { name: "Edit task" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Task 1" })).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.pathname).toBe("/tasks/1"));
   });
 
   test("does not edit a task when Space is pressed on its title", async () => {
-    const { user } = renderApp({ tasks: [task("1")] });
+    const { router, user } = renderApp({ tasks: [task("1")] });
     const titleButton = screen.getByRole("button", { name: "Task 1" });
 
     titleButton.focus();
@@ -183,6 +184,7 @@ describe("TaskList title editing", () => {
 
     expect(screen.queryByRole("textbox", { name: "Edit task" })).not.toBeInTheDocument();
     expect(titleButton).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.pathname).toBe("/tasks/1"));
   });
 
   test("saves a trimmed title when Enter is pressed", async () => {
@@ -351,8 +353,8 @@ describe("TaskList title editing", () => {
   test("edits only one task at a time and discards the other draft", async () => {
     const { store, user } = renderApp({
       tasks: [
-        { id: "1", title: "First", completed: false, createdAt: 1 },
-        { id: "2", title: "Second", completed: false, createdAt: 2 },
+        { id: "1", title: "First", completed: false, createdAt: 1, notes: "" },
+        { id: "2", title: "Second", completed: false, createdAt: 2, notes: "" },
       ],
     });
     const items = store.getState().tasks.items;
@@ -396,8 +398,8 @@ describe("TaskList title editing", () => {
   test("saves the draft when another title is single-clicked during edit", async () => {
     const { store, user } = renderApp({
       tasks: [
-        { id: "1", title: "First", completed: false, createdAt: 1 },
-        { id: "2", title: "Second", completed: false, createdAt: 2 },
+        { id: "1", title: "First", completed: false, createdAt: 1, notes: "" },
+        { id: "2", title: "Second", completed: false, createdAt: 2, notes: "" },
       ],
     });
     const editor = await openTitleEditor(user, "First");

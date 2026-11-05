@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { persistenceSlice } from "../../app/persistenceSlice.ts";
 import type { RootState } from "../../app/store.ts";
 import type { Task } from "./schema.ts";
-import { selectTaskCounts, selectTasks, selectVisibleTasks } from "./selectors.ts";
+import { selectTaskById, selectTaskCounts, selectTasks, selectVisibleTasks } from "./selectors.ts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -10,6 +10,7 @@ function task(overrides: Partial<Task> = {}): Task {
     title: "First task",
     completed: false,
     createdAt: 1,
+    notes: "",
     ...overrides,
   };
 }
@@ -25,6 +26,30 @@ test("selectTasks returns the task items", () => {
   const items = [task()];
 
   expect(selectTasks(stateWith(items))).toBe(items);
+});
+
+describe("selectTaskById", () => {
+  test("returns the matching task", () => {
+    const first = task();
+    const second = task({ id: "task-2", title: "Second task" });
+
+    expect(selectTaskById(stateWith([first, second]), "task-2")).toBe(second);
+  });
+
+  test("returns null for an unknown id", () => {
+    expect(selectTaskById(stateWith([task()]), "missing")).toBeNull();
+  });
+
+  test("returns null for an empty list", () => {
+    expect(selectTaskById(stateWith([]), "task-1")).toBeNull();
+  });
+
+  test("finds a task hidden by the current filter", () => {
+    const completed = task({ id: "task-2", completed: true });
+
+    expect(selectTaskById(stateWith([completed]), "task-2")).toBe(completed);
+    expect(selectVisibleTasks(stateWith([completed]), "active")).toEqual([]);
+  });
 });
 
 describe("selectVisibleTasks", () => {

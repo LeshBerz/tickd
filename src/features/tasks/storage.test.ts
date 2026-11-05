@@ -8,6 +8,7 @@ function task(overrides: Partial<Task> = {}): Task {
     title: "Persist tasks",
     completed: false,
     createdAt: 1,
+    notes: "",
     ...overrides,
   };
 }
@@ -45,12 +46,12 @@ describe("loadTasks", () => {
   test.each([
     ["invalid JSON", "{not json"],
     ["JSON null", "null"],
-    ["an unknown version", JSON.stringify({ version: 2, tasks: [] })],
+    ["an unknown version", JSON.stringify({ version: 3, tasks: [] })],
     [
       "invalid task fields",
       JSON.stringify({
-        version: 1,
-        tasks: [{ id: "task-1", title: "Persist tasks", completed: "no", createdAt: 1 }],
+        version: 2,
+        tasks: [{ id: "task-1", title: "Persist tasks", completed: "no", createdAt: 1, notes: "" }],
       }),
     ],
   ])("discards %s and keeps storage available", (_description, stored) => {
@@ -81,6 +82,33 @@ describe("loadTasks", () => {
     localStorage.setItem("tickd:tasks", JSON.stringify({ version: 1, tasks }));
 
     expect(loadTasks()).toEqual(availableTasks(tasks));
+  });
+
+  test("loads version 1 data without notes and keeps the stored bytes", () => {
+    const stored = JSON.stringify({
+      version: 1,
+      tasks: [{ id: "task-1", title: "Persist tasks", completed: false, createdAt: 1 }],
+    });
+    localStorage.setItem("tickd:tasks", stored);
+
+    expect(loadTasks()).toEqual(availableTasks([task()]));
+    expect(localStorage.getItem("tickd:tasks")).toBe(stored);
+  });
+
+  test("loads version 2 data with notes", () => {
+    const tasks = [task({ notes: "Line one\nline two" })];
+    localStorage.setItem("tickd:tasks", JSON.stringify({ version: 2, tasks }));
+
+    expect(loadTasks()).toEqual(availableTasks(tasks));
+  });
+
+  test("does not rewrite version 2 data while loading it", () => {
+    const stored = JSON.stringify({ version: 2, tasks: [task({ notes: "Kept" })] });
+    localStorage.setItem("tickd:tasks", stored);
+
+    loadTasks();
+
+    expect(localStorage.getItem("tickd:tasks")).toBe(stored);
   });
 
   test("returns no tasks without throwing when getItem throws", () => {
@@ -136,14 +164,26 @@ describe("loadTasks", () => {
     expect(loadTasks()).toEqual(discardedLoad);
     expect(localStorage.getItem("tickd:tasks")).toBe(stored);
   });
+
+  test("discards stored notes longer than 2000 characters without rewriting them", () => {
+    silenceWarnings();
+    const stored = JSON.stringify({
+      version: 2,
+      tasks: [task({ notes: "a".repeat(2001) })],
+    });
+    localStorage.setItem("tickd:tasks", stored);
+
+    expect(loadTasks()).toEqual(discardedLoad);
+    expect(localStorage.getItem("tickd:tasks")).toBe(stored);
+  });
 });
 
 describe("saveTasks", () => {
-  test("writes a version 1 payload under the storage key", () => {
+  test("writes a version 2 payload under the storage key", () => {
     const tasks = [task()];
 
     expect(saveTasks(tasks)).toBe("ok");
-    expect(localStorage.getItem("tickd:tasks")).toBe(JSON.stringify({ version: 1, tasks }));
+    expect(localStorage.getItem("tickd:tasks")).toBe(JSON.stringify({ version: 2, tasks }));
   });
 
   test("round-trips tasks through storage", () => {

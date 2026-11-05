@@ -7,6 +7,9 @@ type TasksSelectorState = Pick<RootState, "tasks">;
 
 export const selectTasks = (state: TasksSelectorState): Task[] => state.tasks.items;
 
+export const selectTaskById = (state: TasksSelectorState, id: string): Task | null =>
+  state.tasks.items.find((task) => task.id === id) ?? null;
+
 export const selectVisibleTasks = createSelector(
   [selectTasks, (_state: TasksSelectorState, filter: Filter) => filter],
   (items, filter): Task[] => {

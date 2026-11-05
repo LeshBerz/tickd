@@ -7,6 +7,7 @@ function task(overrides: Partial<Task> = {}): Task {
     title: "Write tests",
     completed: false,
     createdAt: 1,
+    notes: "",
     ...overrides,
   };
 }
@@ -24,6 +25,34 @@ describe("parseStoredTasks", () => {
     expect(parseStoredTasks(tasks)).toEqual(tasks);
   });
 
+  test("parses valid version 2 data with notes", () => {
+    const tasks = [task({ notes: "First line\nsecond line" })];
+
+    expect(parseStoredTasks({ version: 2, tasks })).toEqual(tasks);
+  });
+
+  test.each([
+    ["version 0", [task()]],
+    [
+      "version 1",
+      {
+        version: 1,
+        tasks: [{ id: "task-1", title: "Write tests", completed: false, createdAt: 1 }],
+      },
+    ],
+  ])("migrates %s data by adding empty notes", (_format, stored) => {
+    expect(parseStoredTasks(stored)).toEqual([task({ notes: "" })]);
+  });
+
+  test("ignores an unknown notes key in legacy payloads", () => {
+    const stored = {
+      version: 1,
+      tasks: [{ ...task(), notes: 42 }],
+    };
+
+    expect(parseStoredTasks(stored)).toEqual([task({ notes: "" })]);
+  });
+
   test.each([
     ["version 0", []],
     ["version 1", { version: 1, tasks: [] }],
@@ -36,7 +65,7 @@ describe("parseStoredTasks", () => {
     ["a number", 1],
     ["a string", "tasks"],
     ["a plain object", {}],
-    ["an unknown version", { version: 2, tasks: [] }],
+    ["an unknown version", { version: 3, tasks: [] }],
     ["a string version", { version: "1", tasks: [] }],
     ["missing tasks", { version: 1 }],
   ])("rejects %s", (_description, stored) => {
@@ -149,20 +178,89 @@ describe("parseStoredTasks", () => {
   });
 });
 
-describe("migrate", () => {
-  test("wraps version 0 tasks in a version 1 payload", () => {
-    const tasks = [task()];
+describe("notes in stored payloads", () => {
+  test("keeps notes exactly as stored, including newlines and surrounding spaces", () => {
+    const notes = "  line one\nline two  \n";
+    const storedTask = task({ notes });
 
-    expect(migrate(tasks)).toEqual({ version: 1, tasks });
+    expect(parseStoredTasks({ version: 2, tasks: [storedTask] })).toEqual([storedTask]);
   });
 
-  test("keeps version 1 data equal", () => {
-    const stored = { version: 1 as const, tasks: [task()] };
+  test("accepts notes of exactly 2000 characters", () => {
+    const notes = "a".repeat(2000);
+    const storedTask = task({ notes });
 
-    expect(migrate(stored)).toEqual(stored);
+    expect(parseStoredTasks({ version: 2, tasks: [storedTask] })).toEqual([storedTask]);
+  });
+
+  test("rejects notes longer than 2000 characters", () => {
+    expect(parseStoredTasks({ version: 2, tasks: [task({ notes: "a".repeat(2001) })] })).toBeNull();
+  });
+
+  test.each([
+    ["a number", 1],
+    ["null", null],
+  ])("rejects version 2 tasks with %s in notes", (_description, notes) => {
+    expect(parseStoredTasks({ version: 2, tasks: [{ ...task(), notes }] })).toBeNull();
+  });
+
+  test("rejects version 2 tasks without a notes field", () => {
+    const legacyTask = { id: "task-1", title: "Write tests", completed: false, createdAt: 1 };
+
+    expect(parseStoredTasks({ version: 2, tasks: [legacyTask] })).toBeNull();
+  });
+
+  test("discards the whole version 2 payload when one notes value is invalid", () => {
+    const stored = {
+      version: 2,
+      tasks: [task(), task({ id: "task-2", notes: "a".repeat(2001) })],
+    };
+
+    expect(parseStoredTasks(stored)).toBeNull();
   });
 });
 
-test("CURRENT_STORAGE_VERSION is 1", () => {
-  expect(CURRENT_STORAGE_VERSION).toBe(1);
+describe("migrate", () => {
+  test("wraps version 0 tasks in the current payload and adds empty notes", () => {
+    const tasks = [task()];
+
+    expect(migrate(tasks)).toEqual({ version: 2, tasks });
+  });
+
+  test("upgrades version 1 data to version 2 with empty notes", () => {
+    const stored = {
+      version: 1 as const,
+      tasks: [{ id: "task-1", title: "Write tests", completed: false, createdAt: 1 }],
+    };
+
+    expect(migrate(stored)).toEqual({ version: 2, tasks: [task()] });
+  });
+
+  test("keeps version 2 data equal", () => {
+    const stored = { version: 2 as const, tasks: [task()] };
+
+    expect(migrate(stored)).toEqual(stored);
+  });
+
+  test("does not mutate the input payload or its tasks", () => {
+    const legacyTask = { id: "task-1", title: "Write tests", completed: false, createdAt: 1 };
+    const v0 = [legacyTask];
+    const v1 = { version: 1 as const, tasks: [legacyTask] };
+    const v2 = { version: 2 as const, tasks: [task({ notes: "Kept" })] };
+    const v0Snapshot = structuredClone(v0);
+    const v1Snapshot = structuredClone(v1);
+    const v2Snapshot = structuredClone(v2);
+
+    migrate(v0);
+    migrate(v1);
+    migrate(v2);
+
+    expect(v0).toEqual(v0Snapshot);
+    expect(v1).toEqual(v1Snapshot);
+    expect(v2).toEqual(v2Snapshot);
+  });
+});
+
+test("CURRENT_STORAGE_VERSION is 2", () => {
+  expect(CURRENT_STORAGE_VERSION).toBe(2);
 });

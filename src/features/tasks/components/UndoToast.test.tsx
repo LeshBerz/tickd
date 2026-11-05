@@ -13,7 +13,7 @@ const DISCARDED_COPY = "Couldn't restore saved tasks. Starting fresh.";
 type AppUser = ReturnType<typeof renderApp>["user"];
 
 function task(id: string, completed = false): Task {
-  return { id, title: `Task ${id}`, completed, createdAt: Number(id) };
+  return { id, title: `Task ${id}`, completed, createdAt: Number(id), notes: "" };
 }
 
 function appShell(): HTMLElement {
@@ -170,7 +170,7 @@ test("hides the toast after 5000ms without changing the remaining tasks", async 
   const saved = localStorage.getItem("tickd:tasks");
   expect(saved).not.toBeNull();
   if (saved !== null) {
-    expect(JSON.parse(saved)).toEqual({ version: 1, tasks: itemsAfterDelete });
+    expect(JSON.parse(saved)).toEqual({ version: 2, tasks: itemsAfterDelete });
     expect(JSON.parse(saved)).not.toHaveProperty("lastRemoved");
   }
 });

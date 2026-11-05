@@ -1,7 +1,8 @@
 import { type RefObject, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import { selectShowKeyboardHints } from "../../preferences/selectShowKeyboardHints.ts";
-import type { Filter } from "../filter.ts";
+import { type Filter, taskPath } from "../filter.ts";
 import { selectTaskCounts, selectVisibleTasks } from "../selectors.ts";
 import { remove, toggle, updateTitle } from "../tasksSlice.ts";
 import { TaskItem } from "./TaskItem.tsx";
@@ -27,6 +28,7 @@ export function TaskList({ filter, addInputRef }: Props) {
   const counts = useAppSelector(selectTaskCounts);
   const showKeyboardHints = useAppSelector(selectShowKeyboardHints);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const checkboxRefs = useRef(new Map<string, HTMLInputElement>());
   const removeRefs = useRef(new Map<string, HTMLButtonElement>());
   const titleRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -99,6 +101,10 @@ export function TaskList({ filter, addInputRef }: Props) {
     titleRefs.current.delete(id);
   };
 
+  const handleOpenTask = (id: string) => {
+    navigate(taskPath(filter, id));
+  };
+
   const scheduleNeighbourFocus = (id: string, kind: "checkbox" | "remove") => {
     const index = tasks.findIndex((task) => task.id === id);
     const neighbour = tasks[index + 1] ?? tasks[index - 1];
@@ -107,6 +113,20 @@ export function TaskList({ filter, addInputRef }: Props) {
     } else {
       setPendingFocus({ kind: "input" });
     }
+  };
+
+  const handleToggle = (id: string) => {
+    if (filter === "all") {
+      dispatch(toggle(id));
+      return;
+    }
+    scheduleNeighbourFocus(id, "checkbox");
+    dispatch(toggle(id));
+  };
+
+  const handleRemove = (id: string) => {
+    scheduleNeighbourFocus(id, "remove");
+    dispatch(remove(id));
   };
 
   const clearSwitchTimer = () => {
@@ -177,20 +197,6 @@ export function TaskList({ filter, addInputRef }: Props) {
     closeEdit(id);
   };
 
-  const handleToggle = (id: string) => {
-    if (filter === "all") {
-      dispatch(toggle(id));
-      return;
-    }
-    scheduleNeighbourFocus(id, "checkbox");
-    dispatch(toggle(id));
-  };
-
-  const handleRemove = (id: string) => {
-    scheduleNeighbourFocus(id, "remove");
-    dispatch(remove(id));
-  };
-
   if (counts.all === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-12 text-text-muted">
@@ -249,7 +255,9 @@ export function TaskList({ filter, addInputRef }: Props) {
           removeRef={setRemoveRef(task.id)}
           titleRef={setTitleRef(task.id)}
           isEditing={editingId === task.id}
+          isAnotherTaskEditing={editingId !== null && editingId !== task.id}
           onStartEdit={handleStartEdit}
+          onOpenTask={handleOpenTask}
           onTitleMouseDown={handleTitleMouseDown}
           onSaveEdit={handleSaveEdit}
           onCancelEdit={handleCancelEdit}

@@ -4,14 +4,20 @@ import { clampTitleLength, normalizePastedTitle, TITLE_MAX_LENGTH } from "../tit
 
 type BlurSuppressRef = { current: boolean };
 
+/** A single click on a title navigates only if no second click follows within this window. */
+export const TITLE_CLICK_NAV_DELAY_MS = 250;
+
 type Props = {
   task: Task;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
+  onOpenTask?: (id: string) => void;
   checkboxRef?: Ref<HTMLInputElement>;
   removeRef?: Ref<HTMLButtonElement>;
   titleRef?: Ref<HTMLButtonElement>;
   isEditing?: boolean;
+  /** True while another row is in inline edit mode — a click then only commits that draft. */
+  isAnotherTaskEditing?: boolean;
   onStartEdit?: (id: string) => void;
   onTitleMouseDown?: (id: string) => void;
   onSaveEdit?: (id: string, title: string) => void;
@@ -28,10 +34,12 @@ export function TaskItem({
   task,
   onToggle,
   onRemove,
+  onOpenTask = () => {},
   checkboxRef,
   removeRef,
   titleRef,
   isEditing = false,
+  isAnotherTaskEditing = false,
   onStartEdit = () => {},
   onTitleMouseDown = () => {},
   onSaveEdit = () => {},
@@ -46,6 +54,7 @@ export function TaskItem({
   const editInputRef = useRef<HTMLInputElement>(null);
   const editInputId = useId();
   const errorId = useId();
+  const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (isEditing !== wasEditing) {
     setWasEditing(isEditing);
@@ -60,6 +69,31 @@ export function TaskItem({
       return;
     }
     editInputRef.current?.focus();
+  }, [isEditing]);
+
+  const clearNavTimer = () => {
+    if (navTimerRef.current !== null) {
+      clearTimeout(navTimerRef.current);
+      navTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (navTimerRef.current !== null) {
+        clearTimeout(navTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isEditing) {
+      return;
+    }
+    if (navTimerRef.current !== null) {
+      clearTimeout(navTimerRef.current);
+      navTimerRef.current = null;
+    }
   }, [isEditing]);
 
   const setDraft = (value: string) => {
@@ -127,9 +161,26 @@ export function TaskItem({
       event.preventDefault();
       onStartEdit(task.id);
     }
-    if (event.key === " ") {
-      event.preventDefault();
+  };
+
+  const handleTitleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isEditing || isAnotherTaskEditing || suppressBlurSaveRef.current) {
+      return;
     }
+    // The second click of a double click opens the editor instead (stage 8).
+    if (event.detail > 1) {
+      return;
+    }
+    clearNavTimer();
+    navTimerRef.current = setTimeout(() => {
+      navTimerRef.current = null;
+      onOpenTask(task.id);
+    }, TITLE_CLICK_NAV_DELAY_MS);
+  };
+
+  const handleTitleDoubleClick = () => {
+    clearNavTimer();
+    onStartEdit(task.id);
   };
 
   if (isEditing) {
@@ -216,7 +267,8 @@ export function TaskItem({
         type="button"
         data-task-id={task.id}
         onMouseDown={() => onTitleMouseDown(task.id)}
-        onDoubleClick={() => onStartEdit(task.id)}
+        onClick={handleTitleClick}
+        onDoubleClick={handleTitleDoubleClick}
         onKeyDown={handleTitleKeyDown}
         className={`flex-1 text-lg font-semibold px-2 lg:px-0 transition-colors motion-reduce:transition-none min-w-0 break-words text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded ${
           task.completed ? "line-through text-text-muted" : "text-text"

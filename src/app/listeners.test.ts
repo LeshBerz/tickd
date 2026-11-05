@@ -9,12 +9,13 @@ function task(overrides: Partial<Task> = {}): Task {
     title: "Stored task",
     completed: false,
     createdAt: 1,
+    notes: "",
     ...overrides,
   };
 }
 
 function expectStorageToMatch(tasks: Task[]): void {
-  expect(localStorage.getItem("tickd:tasks")).toBe(JSON.stringify({ version: 1, tasks }));
+  expect(localStorage.getItem("tickd:tasks")).toBe(JSON.stringify({ version: 2, tasks }));
 }
 
 type PersistenceState = {

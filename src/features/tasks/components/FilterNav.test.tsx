@@ -4,7 +4,7 @@ import { renderApp } from "../../../test/renderApp.tsx";
 import type { Task } from "../schema.ts";
 
 function task(id: string, completed: boolean): Task {
-  return { id, title: `Task ${id}`, completed, createdAt: Number(id) };
+  return { id, title: `Task ${id}`, completed, createdAt: Number(id), notes: "" };
 }
 
 function sidebarNav() {

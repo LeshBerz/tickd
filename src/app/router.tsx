@@ -1,27 +1,39 @@
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
+import { TasksLayout } from "../features/tasks/components/TasksLayout.tsx";
 import { TasksView } from "../features/tasks/components/TasksView.tsx";
 import { FILTERS, filterPaths } from "../features/tasks/filter.ts";
 import { App } from "./App.tsx";
 
-const filterChildren: RouteObject[] = FILTERS.map((filter) => {
+const DETAIL_ROUTE = "tasks/:id";
+
+function listAndDetailRoutes(): RouteObject[] {
+  return [
+    { index: true, element: <TasksView /> },
+    { path: DETAIL_ROUTE, element: <TasksView /> },
+  ];
+}
+
+const filterChildren: RouteObject[] = FILTERS.flatMap((filter): RouteObject[] => {
   if (filter === "all") {
-    return {
-      index: true,
-      element: <TasksView />,
-    };
+    return listAndDetailRoutes();
   }
-  return {
-    path: filterPaths[filter].slice(1),
-    element: <TasksView />,
-    caseSensitive: true,
-  };
+  return [
+    {
+      path: filterPaths[filter].slice(1),
+      caseSensitive: true,
+      children: listAndDetailRoutes(),
+    },
+  ];
 });
 
 export const routes: RouteObject[] = [
   {
     path: "/",
     element: <App />,
-    children: [...filterChildren, { path: "*", element: <Navigate to="/" replace /> }],
+    children: [
+      { element: <TasksLayout />, children: filterChildren },
+      { path: "*", element: <Navigate to="/" replace /> },
+    ],
   },
 ];
 

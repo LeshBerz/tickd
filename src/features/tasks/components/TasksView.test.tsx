@@ -4,9 +4,9 @@ import { renderApp } from "../../../test/renderApp.tsx";
 import type { Task } from "../schema.ts";
 
 const tasks: Task[] = [
-  { id: "1", title: "Active first", completed: false, createdAt: 1 },
-  { id: "2", title: "Completed middle", completed: true, createdAt: 2 },
-  { id: "3", title: "Active last", completed: false, createdAt: 3 },
+  { id: "1", title: "Active first", completed: false, createdAt: 1, notes: "" },
+  { id: "2", title: "Completed middle", completed: true, createdAt: 2, notes: "" },
+  { id: "3", title: "Active last", completed: false, createdAt: 3, notes: "" },
 ];
 
 describe("TasksView routes", () => {
@@ -84,7 +84,7 @@ describe("TasksView empty states", () => {
     const completed = path === "/active";
     renderApp({
       path,
-      tasks: [{ id: "1", title: "Hidden task", completed, createdAt: 1 }],
+      tasks: [{ id: "1", title: "Hidden task", completed, createdAt: 1, notes: "" }],
     });
 
     expect(screen.getByText("Nothing here")).toBeInTheDocument();

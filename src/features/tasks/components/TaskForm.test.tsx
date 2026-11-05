@@ -215,7 +215,7 @@ describe("TaskForm", () => {
 
     await waitFor(() => {
       expect(JSON.parse(localStorage.getItem("tickd:tasks") ?? "null")).toMatchObject({
-        version: 1,
+        version: 2,
         tasks: [{ title: "Persistent task", completed: false }],
       });
     });
@@ -228,7 +228,7 @@ describe("TaskForm", () => {
 
   test("shows a decorative N hint beside Add when keyboard hints are on", () => {
     renderApp({
-      tasks: [{ id: "1", title: "Existing", completed: false, createdAt: 1 }],
+      tasks: [{ id: "1", title: "Existing", completed: false, createdAt: 1, notes: "" }],
     });
 
     const form = screen.getByRole("button", { name: "Add" }).closest("form");

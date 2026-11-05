@@ -1,6 +1,16 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Task } from "./schema.ts";
-import { add, clearCompleted, initialState, remove, tasksSlice, toggle } from "./tasksSlice.ts";
+import {
+  add,
+  clearCompleted,
+  initialState,
+  remove,
+  restore,
+  tasksSlice,
+  toggle,
+  updateNotes,
+  updateTitle,
+} from "./tasksSlice.ts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -8,6 +18,7 @@ function task(overrides: Partial<Task> = {}): Task {
     title: "First task",
     completed: false,
     createdAt: 1,
+    notes: "",
     ...overrides,
   };
 }
@@ -578,5 +589,95 @@ describe("clearCompleted undo snapshot", () => {
     expect(next).toBe(state);
     expect(next.items).toBe(state.items);
     expect(lastRemovedFrom(next)).toBeNull();
+  });
+});
+
+describe("updateNotes", () => {
+  test("stores notes for the matching task", () => {
+    const first = task();
+    const second = task({ id: "task-2", title: "Second task" });
+    const state = { items: [first, second], lastRemoved: null };
+
+    const next = tasksSlice.reducer(state, updateNotes("task-2", "Remember the milk"));
+
+    expect(next.items[0]).toBe(first);
+    expect(next.items[1]).toEqual({ ...second, notes: "Remember the milk" });
+  });
+
+  test("does not trim or collapse notes", () => {
+    const state = { items: [task()], lastRemoved: null };
+    const notes = "  spaced  \n\nmultiple lines\n";
+
+    const next = tasksSlice.reducer(state, updateNotes("task-1", notes));
+
+    expect(next.items[0]?.notes).toBe(notes);
+  });
+
+  test("accepts exactly 2000 characters", () => {
+    const notes = "a".repeat(2000);
+    const state = { items: [task()], lastRemoved: null };
+
+    expect(tasksSlice.reducer(state, updateNotes("task-1", notes)).items[0]?.notes).toBe(notes);
+  });
+
+  test("ignores notes longer than 2000 characters and returns the same state", () => {
+    const state = { items: [task()], lastRemoved: null };
+
+    expect(tasksSlice.reducer(state, updateNotes("task-1", "a".repeat(2001)))).toBe(state);
+  });
+
+  test("ignores an over-limit payload that bypasses prepare", () => {
+    const state = { items: [task()], lastRemoved: null };
+    const action = { type: updateNotes.type, payload: { id: "task-1", notes: "a".repeat(2001) } };
+
+    expect(tasksSlice.reducer(state, action)).toBe(state);
+  });
+
+  test("keeps the same state for an unknown id", () => {
+    const state = { items: [task()], lastRemoved: null };
+
+    expect(tasksSlice.reducer(state, updateNotes("missing", "Note"))).toBe(state);
+  });
+
+  test("keeps the same items reference when the value is unchanged", () => {
+    const state = { items: [task({ notes: "Same" })], lastRemoved: null };
+
+    const next = tasksSlice.reducer(state, updateNotes("task-1", "Same"));
+
+    expect(next).toBe(state);
+    expect(next.items).toBe(state.items);
+  });
+
+  test("keeps notes through toggle, title edits and an undo round trip", () => {
+    const state = { items: [task({ notes: "Keep me" })], lastRemoved: null };
+
+    const toggled = tasksSlice.reducer(state, toggle("task-1"));
+    expect(toggled.items[0]?.notes).toBe("Keep me");
+
+    const renamed = tasksSlice.reducer(toggled, updateTitle("task-1", "Renamed"));
+    expect(renamed.items[0]?.notes).toBe("Keep me");
+
+    const removed = tasksSlice.reducer(renamed, remove("task-1"));
+    expect(removed.lastRemoved?.task.notes).toBe("Keep me");
+
+    const restored = tasksSlice.reducer(removed, restore());
+    expect(restored.items[0]?.notes).toBe("Keep me");
+  });
+
+  test("keeps notes of active tasks when completed tasks are cleared", () => {
+    const active = task({ notes: "Active note" });
+    const done = task({ id: "task-2", title: "Done", completed: true, notes: "Done note" });
+    const state = { items: [active, done], lastRemoved: null };
+
+    const next = tasksSlice.reducer(state, clearCompleted());
+
+    expect(next.items).toEqual([active]);
+    expect(next.items[0]?.notes).toBe("Active note");
+  });
+
+  test("add creates a task with empty notes", () => {
+    const next = tasksSlice.reducer(initialState, add("Write tests"));
+
+    expect(next.items[0]?.notes).toBe("");
   });
 });

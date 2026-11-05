@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { NOTES_MAX_LENGTH } from "./notes.ts";
 import type { Task } from "./schema.ts";
 import { TITLE_MAX_LENGTH } from "./title.ts";
 
@@ -25,6 +26,7 @@ export const tasksSlice = createSlice({
             title: title.trim(),
             completed: false,
             createdAt: Date.now(),
+            notes: "",
           },
         };
       },
@@ -99,8 +101,32 @@ export const tasksSlice = createSlice({
         return { payload: { id, title: title.trim() } };
       },
     },
+    updateNotes: {
+      reducer(state, action: PayloadAction<{ id: string; notes: string }>) {
+        const notes = action.payload.notes;
+        if (notes.length > NOTES_MAX_LENGTH) {
+          return;
+        }
+        const task = state.items.find((item) => item.id === action.payload.id);
+        if (!task || task.notes === notes) {
+          return;
+        }
+        task.notes = notes;
+      },
+      prepare(id: string, notes: string) {
+        return { payload: { id, notes } };
+      },
+    },
   },
 });
 
-export const { add, toggle, remove, restore, clearLastRemoved, clearCompleted, updateTitle } =
-  tasksSlice.actions;
+export const {
+  add,
+  toggle,
+  remove,
+  restore,
+  clearLastRemoved,
+  clearCompleted,
+  updateTitle,
+  updateNotes,
+} = tasksSlice.actions;
