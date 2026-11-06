@@ -272,7 +272,7 @@ export function TaskItem({
         onClick={handleTitleClick}
         onDoubleClick={handleTitleDoubleClick}
         onKeyDown={handleTitleKeyDown}
-        className={`flex-1 text-lg font-semibold px-2 lg:px-0 transition-colors motion-reduce:transition-none min-w-0 break-words text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded ${
+        className={`flex-1 text-lg font-semibold px-2 lg:px-0 py-2 transition-colors motion-reduce:transition-none min-w-0 break-words text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded ${
           task.completed ? "line-through text-text-muted" : "text-text"
         }`}
       >

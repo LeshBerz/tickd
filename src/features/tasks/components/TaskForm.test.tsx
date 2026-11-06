@@ -248,6 +248,47 @@ describe("TaskForm", () => {
     );
     expect(elementHidesUntilFinePointer(kbd, form)).toBe(true);
   });
+
+  test("keeps the N hint and the Add button in one right-hand block", () => {
+    renderApp({
+      tasks: [{ id: "1", title: "Existing", completed: false, createdAt: 1, notes: "" }],
+    });
+
+    const addButton = screen.getByRole("button", { name: "Add" });
+    const kbd = addButton.parentElement?.querySelector("kbd");
+    if (!(kbd instanceof HTMLElement)) {
+      throw new Error("add shortcut hint is missing");
+    }
+
+    // Hint and button share a single absolutely positioned container, so no localized
+    // button width can push one into the other.
+    const block = kbd.parentElement;
+    expect(block).toBe(addButton.parentElement);
+    const blockClass = block?.getAttribute("class") ?? "";
+    expect(blockClass).toMatch(/\babsolute\b/);
+    expect(blockClass).toMatch(/\bright-1\.5\b/);
+    expect(blockClass).toMatch(/\bflex\b/);
+    expect(blockClass).toMatch(/\bitems-center\b/);
+    expect(blockClass).toMatch(/\bgap-2\b/);
+
+    // The hint comes first in that block, so it can only ever sit left of the button.
+    expect(kbd.compareDocumentPosition(addButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  test("reserves input padding for the widest right-hand block", () => {
+    renderApp({
+      tasks: [{ id: "1", title: "Existing", completed: false, createdAt: 1, notes: "" }],
+    });
+
+    const input = screen.getByRole("textbox", { name: "Add a task" });
+    const inputClass = input.getAttribute("class") ?? "";
+    // `pr-36` (144px) on phones and `sm:pr-48` (192px) from 640px up: more than the
+    // longest localized button plus the hint and the gaps between them.
+    expect(inputClass).toMatch(/\bpr-36\b/);
+    expect(inputClass).toMatch(/\bsm:pr-48\b/);
+  });
 });
 
 function elementHidesUntilFinePointer(element: Element, root: Element): boolean {

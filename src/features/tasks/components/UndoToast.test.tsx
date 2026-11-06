@@ -121,6 +121,22 @@ test("puts the undo toast after the task footers", async () => {
   }
 });
 
+test("centres the toast with a wrapper instead of shifting the toast itself", async () => {
+  const { user } = renderApp({ tasks: [task("1"), task("2")] });
+
+  await user.click(screen.getByRole("button", { name: "Delete task: Task 1" }));
+
+  const toast = undoToast();
+  const layer = toast.parentElement;
+  expect(layer).not.toBeNull();
+  // The wrapper owns the centring: the toast keeps a neutral transform, so the entrance
+  // animation cannot double the offset.
+  expect(layer).toHaveClass("toast-layer");
+  expect(toast).not.toHaveClass("-translate-x-1/2");
+  expect(toast.className).not.toMatch(/\bleft-1\/2\b/);
+  expect(toast.className).not.toMatch(/\blg:left-\[/);
+});
+
 test("restores the deleted task between its neighbours", async () => {
   const { user } = renderApp({ tasks: [task("1"), task("2"), task("3")] });
 

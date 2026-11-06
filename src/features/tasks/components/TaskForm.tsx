@@ -75,29 +75,31 @@ export function TaskForm({ inputRef }: Props) {
           placeholder={t("tasks.addPlaceholder")}
           aria-describedby={error ? errorId : undefined}
           aria-invalid={error ? "true" : undefined}
-          className={`w-full bg-surface lg:bg-bg border-2 rounded-pill py-3 lg:py-3.5 pl-5 lg:pl-6 pr-20 lg:pr-28 text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:border-transparent transition-all motion-reduce:transition-none font-medium ${
+          className={`w-full bg-surface lg:bg-bg border-2 rounded-pill py-3 lg:py-3.5 pl-5 lg:pl-6 pr-36 sm:pr-48 text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:border-transparent transition-all motion-reduce:transition-none font-medium ${
             error
               ? "border-danger focus-visible:ring-danger"
               : "border-border-ui focus-visible:ring-ring"
           }`}
         />
-        {showHints ? (
-          <div className="absolute right-24 mr-2 hidden fine-pointer:block">
-            {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: decorative shortcut hint */}
+        {/* The hint and the button form one right-hand block, so no locale can make them
+            overlap; the input reserves more padding than this block can ever need. */}
+        <div className="absolute right-1.5 inset-y-0 flex items-center gap-2">
+          {showHints ? (
+            // biome-ignore lint/a11y/noAriaHiddenOnFocusable: decorative shortcut hint
             <kbd
               aria-hidden="true"
-              className="font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm"
+              className="hidden sm:fine-pointer:inline-block font-sans text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted shadow-sm"
             >
               N
             </kbd>
-          </div>
-        ) : null}
-        <button
-          type="submit"
-          className="absolute right-1.5 bg-accent text-accent-text hover:opacity-90 rounded-pill px-4 lg:px-5 py-2 lg:py-2.5 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface lg:focus-visible:ring-offset-bg transition-all motion-reduce:transition-none shadow-sm min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0"
-        >
-          {t("tasks.add")}
-        </button>
+          ) : null}
+          <button
+            type="submit"
+            className="bg-accent text-accent-text hover:opacity-90 rounded-pill px-4 lg:px-5 py-2 lg:py-2.5 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface lg:focus-visible:ring-offset-bg transition-all motion-reduce:transition-none shadow-sm min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0"
+          >
+            {t("tasks.add")}
+          </button>
+        </div>
       </div>
       {value.length > 0 ? (
         <p
