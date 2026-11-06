@@ -1,5 +1,7 @@
 (() => {
   const STORAGE_KEY = "tickd:preferences";
+  // Both stored versions share the fields read here; unknown versions are ignored.
+  const SUPPORTED_VERSIONS = [1, 2];
   const THEMES = ["system", "light", "dark"];
   const ACCENTS = ["teal", "blue", "violet", "amber", "rose"];
   const LANGUAGES = ["en", "ru"];
@@ -15,7 +17,7 @@
         return null;
       }
       const parsed = JSON.parse(raw);
-      return parsed && parsed.version === 1 ? parsed : null;
+      return parsed && SUPPORTED_VERSIONS.indexOf(parsed.version) !== -1 ? parsed : null;
     } catch {
       return null;
     }

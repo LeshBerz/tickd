@@ -18,6 +18,7 @@
   --color-border: var(--theme-border);
   --color-border-ui: var(--theme-border-ui);
   --color-ring: var(--theme-ring);
+  --color-scrim: var(--theme-scrim);
 
   /* Palette swatches for the settings picker (independent of the active accent). */
   --color-swatch-teal: var(--swatch-teal);
@@ -49,6 +50,7 @@
   --theme-border: #e7e5e4;
   --theme-border-ui: #78716c;
   --theme-ring: #0f766e;
+  --theme-scrim: rgb(28 25 23 / 0.55);
 
   /* Accent palette swatches, identical to the accents applied by `data-accent`. */
   --swatch-teal: #0f766e;
@@ -73,6 +75,7 @@
   --theme-border: #44403c;
   --theme-border-ui: #a8a29e;
   --theme-ring: #2dd4bf;
+  --theme-scrim: rgb(0 0 0 / 0.68);
 }
 
 /* Accent palettes. Every pair below is verified for WCAG AA contrast in
@@ -138,7 +141,129 @@
 }
 
 @media (max-width: 1023px) {
-  .has-toast {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  /* The sticky footer would otherwise cover the last rows and the toast; the column
+     reserves the measured toast height above it. */
+  .has-toast [data-task-column] {
+    padding-bottom: calc(var(--toast-height, 4.5rem) + 2.5rem);
+  }
+}
+
+/* Undo toast layer: centres the toast over the visible task area.
+   `--toast-left` / `--toast-width` come from the measuring effect; without them the
+   layer spans the whole main area, which centres the toast over it. */
+.toast-layer {
+  position: absolute;
+  left: var(--toast-left, 0px);
+  width: var(--toast-width, 100%);
+  bottom: 2rem;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  padding-inline: 1rem;
+  pointer-events: none;
+}
+
+.toast-layer > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 1023px) {
+  /* Mobile: the toast is fixed to the viewport and sits above the task footer — the
+     offset is measured by the toast layer, so no hardcoded footer height is involved. */
+  .toast-layer {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    bottom: var(--toast-bottom, 1rem);
+  }
+}
+
+/* Tour spotlight: the scrim comes from a huge outer shadow so the target stays clickable-free. */
+.guide-spotlight {
+  box-shadow:
+    0 0 0 2px var(--theme-ring),
+    0 0 0 100vmax var(--theme-scrim);
+  pointer-events: none;
+}
+
+/* --- Motion. Every animation is short, subtle and disabled under reduced motion. --- */
+
+@keyframes tickd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tickd-toast-in {
+  from {
+    opacity: 0;
+    /* Vertical only: the layer already centres the toast horizontally. */
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tickd-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-rise {
+  animation: tickd-rise 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.animate-toast-in {
+  animation: tickd-toast-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.animate-card-in {
+  animation: tickd-card-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/* Children of a staggered group appear one after another (list rows, settings cards). */
+.stagger > * {
+  animation: tickd-rise 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.stagger > :nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.stagger > :nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.stagger > :nth-child(4) {
+  animation-delay: 120ms;
+}
+
+.stagger > :nth-child(5) {
+  animation-delay: 160ms;
+}
+
+.stagger > :nth-child(n + 6) {
+  animation-delay: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-toast-in,
+  .animate-card-in,
+  .stagger > * {
+    animation: none;
   }
 }

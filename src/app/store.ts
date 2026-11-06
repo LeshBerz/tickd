@@ -1,4 +1,5 @@
 import { combineSlices, configureStore } from "@reduxjs/toolkit";
+import { guideSlice } from "../features/guide/guideSlice.ts";
 import { preferencesSlice } from "../features/preferences/preferencesSlice.ts";
 import { DEFAULT_PREFERENCES } from "../features/preferences/schema.ts";
 import { loadPreferences } from "../features/preferences/storage.ts";
@@ -7,7 +8,12 @@ import { tasksSlice } from "../features/tasks/tasksSlice.ts";
 import { listenerMiddleware } from "./listeners.ts";
 import { persistenceSlice } from "./persistenceSlice.ts";
 
-export const rootReducer = combineSlices(tasksSlice, persistenceSlice, preferencesSlice);
+export const rootReducer = combineSlices(
+  tasksSlice,
+  persistenceSlice,
+  preferencesSlice,
+  guideSlice,
+);
 
 export type RootState = ReturnType<typeof rootReducer>;
 
@@ -16,6 +22,7 @@ export type StorePreload = {
   tasks?: Partial<RootState["tasks"]>;
   persistence?: Partial<RootState["persistence"]>;
   preferences?: Partial<RootState["preferences"]>;
+  guide?: Partial<RootState["guide"]>;
 };
 
 function mergeTasksPreload(
@@ -39,12 +46,14 @@ function mergePreferencesPreload(
 export function makeStore(preloadedState?: StorePreload) {
   if (preloadedState !== undefined) {
     const tasks = mergeTasksPreload(preloadedState.tasks);
+    const guide = { open: false, ...preloadedState.guide };
     return configureStore({
       reducer: rootReducer,
       preloadedState: {
         ...preloadedState,
         ...(tasks === undefined ? {} : { tasks }),
         preferences: mergePreferencesPreload(preloadedState.preferences),
+        guide,
       } as Partial<RootState>,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().prepend(listenerMiddleware.middleware),
@@ -63,6 +72,7 @@ export function makeStore(preloadedState?: StorePreload) {
         availabilityDismissed: false,
       },
       preferences: loadPreferences(),
+      guide: { open: false },
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().prepend(listenerMiddleware.middleware),

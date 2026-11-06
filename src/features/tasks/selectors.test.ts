@@ -1,9 +1,16 @@
 import { describe, expect, test } from "vitest";
 import { persistenceSlice } from "../../app/persistenceSlice.ts";
 import type { RootState } from "../../app/store.ts";
+import { guideSlice } from "../guide/guideSlice.ts";
 import { preferencesSlice } from "../preferences/preferencesSlice.ts";
 import type { Task } from "./schema.ts";
-import { selectTaskById, selectTaskCounts, selectTasks, selectVisibleTasks } from "./selectors.ts";
+import {
+  selectHasSampleTasks,
+  selectTaskById,
+  selectTaskCounts,
+  selectTasks,
+  selectVisibleTasks,
+} from "./selectors.ts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -21,6 +28,7 @@ function stateWith(items: Task[]): RootState {
     tasks: { items, lastRemoved: null },
     persistence: persistenceSlice.getInitialState(),
     preferences: preferencesSlice.getInitialState(),
+    guide: guideSlice.getInitialState(),
   };
 }
 
@@ -124,5 +132,28 @@ describe("selectTaskCounts", () => {
     const secondResult = selectTaskCounts(state);
 
     expect(secondResult).toBe(firstResult);
+  });
+});
+
+describe("selectHasSampleTasks", () => {
+  function sample(id: string): Task {
+    return task({ id, title: "Starter" });
+  }
+
+  test("is false while the starter set is incomplete", () => {
+    expect(selectHasSampleTasks(stateWith([]))).toBe(false);
+    expect(selectHasSampleTasks(stateWith([sample("sample-plan")]))).toBe(false);
+  });
+
+  test("is true once all three sample ids are present", () => {
+    const items = [sample("sample-plan"), sample("sample-walk"), sample("sample-message")];
+
+    expect(selectHasSampleTasks(stateWith(items))).toBe(true);
+  });
+
+  test("ignores tasks whose titles merely look like samples", () => {
+    const items = [task({ id: "mine", title: "Take a 20-minute walk" })];
+
+    expect(selectHasSampleTasks(stateWith(items))).toBe(false);
   });
 });

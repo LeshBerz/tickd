@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, settle, test } from "./fixtures.ts";
 
 type Preferences = {
   version?: number;
@@ -7,13 +8,23 @@ type Preferences = {
   language?: string;
   accent?: string;
   showKeyboardHints?: boolean;
+  guideCompleted?: boolean;
 };
 
+/** Seeds a settled profile: the first-visit tour is not part of these specs. */
 async function seedPreferences(page: Page, preferences: Preferences) {
   await page.addInitScript((value) => {
     localStorage.setItem(
       "tickd:preferences",
-      JSON.stringify({ version: 1, ...(value as Record<string, unknown>) }),
+      JSON.stringify({
+        version: 2,
+        theme: "system",
+        language: "en",
+        accent: "teal",
+        showKeyboardHints: true,
+        guideCompleted: true,
+        ...(value as Record<string, unknown>),
+      }),
     );
   }, preferences);
 }
@@ -68,7 +79,7 @@ test("applies a dark theme, an accent palette, and survives a reload", async ({ 
     .toBe("#fda4af");
 
   const saved = await storedPreferences(page);
-  expect(saved).toMatchObject({ version: 1, theme: "dark", accent: "rose" });
+  expect(saved).toMatchObject({ version: 2, theme: "dark", accent: "rose" });
 
   await page.reload();
 
@@ -142,6 +153,10 @@ test("rejects a malformed stored preference without breaking the app", async ({ 
   await expect(page.getByRole("heading", { level: 2, name: "All tasks" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-accent", "teal");
 
+  // Unreadable preferences fall back to defaults, so the visitor still gets the tour.
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);
 });
@@ -151,14 +166,17 @@ test("has no detectable accessibility violations on settings in both themes and 
 }) => {
   await page.goto("/settings");
 
+  await settle(page);
   const light = await new AxeBuilder({ page }).analyze();
   expect(light.violations).toEqual([]);
 
   await page.getByRole("radio", { name: "Dark" }).check();
+  await settle(page);
   const dark = await new AxeBuilder({ page }).analyze();
   expect(dark.violations).toEqual([]);
 
   await page.getByRole("radio", { name: "Русский" }).check();
+  await settle(page);
   const russian = await new AxeBuilder({ page }).analyze();
   expect(russian.violations).toEqual([]);
 });
@@ -170,6 +188,8 @@ test("has no detectable accessibility violations on the main UI in Russian", asy
 
   for (const path of ["/", "/active", "/completed"]) {
     await page.goto(path);
+    // The rows fade in with a stagger; axe must judge the settled colours.
+    await settle(page);
     const { violations } = await new AxeBuilder({ page }).analyze();
     expect(violations).toEqual([]);
   }

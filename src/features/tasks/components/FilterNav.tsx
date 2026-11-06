@@ -71,6 +71,7 @@ export function FilterNav({ variant }: Props) {
     return (
       <nav
         aria-label={t("nav.filterLabel")}
+        data-guide="filters"
         className="flex p-1 bg-bg rounded-pill border border-border shadow-inner w-full max-w-full"
       >
         {FILTERS.map((filter) => (
@@ -88,7 +89,11 @@ export function FilterNav({ variant }: Props) {
   }
 
   return (
-    <nav aria-label={t("nav.filterLabel")} className="flex-1 px-3 flex flex-col gap-1">
+    <nav
+      aria-label={t("nav.filterLabel")}
+      data-guide="filters"
+      className="flex-1 px-3 flex flex-col gap-1"
+    >
       {FILTERS.map((filter, index) => (
         <NavLink
           key={filter}

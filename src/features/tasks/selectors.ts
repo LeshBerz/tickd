@@ -1,6 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "../../app/store.ts";
 import type { Filter } from "./filter.ts";
+import { hasAllSamples } from "./samples.ts";
 import type { Task } from "./schema.ts";
 
 type TasksSelectorState = Pick<RootState, "tasks">;
@@ -29,3 +30,6 @@ export const selectTaskCounts = createSelector([selectTasks], (items) => ({
   active: items.filter((task) => !task.completed).length,
   completed: items.filter((task) => task.completed).length,
 }));
+
+/** The sample button is hidden once the starter set is present. */
+export const selectHasSampleTasks = createSelector([selectTasks], (items) => hasAllSamples(items));

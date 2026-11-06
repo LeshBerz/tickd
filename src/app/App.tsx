@@ -1,11 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router";
+import { GuideTour } from "../features/guide/GuideTour.tsx";
+import { useFirstVisitGuide } from "../features/guide/useFirstVisitGuide.ts";
 import { useApplyPreferences } from "../features/preferences/useApplyPreferences.ts";
 import { FilterNav } from "../features/tasks/components/FilterNav.tsx";
 import { TaskFooter } from "../features/tasks/components/TaskFooter.tsx";
 import { UndoToast } from "../features/tasks/components/UndoToast.tsx";
 import { useRouteTaskId } from "../features/tasks/useRouteTaskId.ts";
 import { useAppSelector } from "./hooks.ts";
+import { Logo } from "./Logo.tsx";
 import { SETTINGS_PATH } from "./paths.ts";
 import { useTaskHotkeys } from "./useTaskHotkeys.ts";
 
@@ -35,6 +38,7 @@ function GearIcon() {
 export function App() {
   useTaskHotkeys();
   useApplyPreferences();
+  useFirstVisitGuide();
   const { t } = useTranslation();
   const location = useLocation();
   const hasUndoToast = useAppSelector((state) => state.tasks.lastRemoved != null);
@@ -44,12 +48,16 @@ export function App() {
 
   return (
     <div
+      data-app-shell=""
       className={`min-h-dvh flex flex-col lg:flex-row lg:h-dvh lg:overflow-hidden${hasUndoToast ? " has-toast" : ""}`}
     >
       <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-bg shrink-0">
-        <h1 className="text-2xl font-extrabold tracking-tight text-accent">Tickd</h1>
+        <h1 className="text-2xl">
+          <Logo />
+        </h1>
         <NavLink
           to={SETTINGS_PATH}
+          data-guide="settings"
           aria-label={t("nav.settings")}
           className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-card text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors motion-reduce:transition-none"
         >
@@ -65,25 +73,28 @@ export function App() {
 
       <aside className="hidden lg:flex w-64 bg-sidebar border-r border-border flex-col shrink-0">
         <div className="p-6 shrink-0">
-          <h1 className="text-3xl font-extrabold tracking-tight text-accent">Tickd</h1>
+          <h1 className="text-3xl">
+            <Logo />
+          </h1>
         </div>
         <div className="px-4 pb-2 text-xs font-bold text-text-muted uppercase tracking-wider">
           {t("nav.tasks")}
         </div>
         <FilterNav variant="sidebar" />
         <nav aria-label={t("nav.settings")} className="px-3 pb-4 mt-auto">
-          <NavLink to={SETTINGS_PATH} className={SETTINGS_LINK_CLASS}>
+          <NavLink to={SETTINGS_PATH} data-guide="settings" className={SETTINGS_LINK_CLASS}>
             <GearIcon />
             {t("nav.settings")}
           </NavLink>
         </nav>
       </aside>
 
-      <main className="flex-1 flex flex-col bg-bg lg:bg-surface relative lg:overflow-hidden">
+      <main className="flex-1 min-w-0 flex flex-col bg-bg lg:bg-surface relative lg:overflow-hidden">
         <Outlet />
         {showMobileFooter ? <TaskFooter variant="mobile" /> : null}
         <UndoToast />
       </main>
+      <GuideTour />
     </div>
   );
 }

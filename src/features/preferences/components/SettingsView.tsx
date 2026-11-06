@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
+import { openGuide } from "../../guide/guideSlice.ts";
+import { filterPaths } from "../../tasks/filter.ts";
 import { LANGUAGES, type Language } from "../language.ts";
 import { ACCENTS, type Accent } from "../palettes.ts";
 import { setAccent, setLanguage, setShowKeyboardHints, setTheme } from "../preferencesSlice.ts";
@@ -42,14 +45,21 @@ const ROW_CLASS =
 export function SettingsView() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const theme = useAppSelector(selectTheme);
   const accent = useAppSelector(selectAccent);
   const language = useAppSelector(selectLanguage);
   const showKeyboardHints = useAppSelector(selectShowKeyboardHints);
 
+  // The tour highlights task-view targets, so replay starts from the list.
+  const handleReplay = () => {
+    navigate(filterPaths.all);
+    dispatch(openGuide());
+  };
+
   return (
     <div className="flex-1 lg:overflow-y-auto w-full lg:pl-16 xl:pl-24 lg:pr-8">
-      <div className="w-full max-w-[44rem] px-4 lg:px-0 py-6 lg:py-10 flex flex-col gap-6">
+      <div className="w-full max-w-[44rem] px-4 lg:px-0 py-6 lg:py-10 flex flex-col gap-6 stagger">
         <header>
           <h2 className="text-2xl font-extrabold text-text">{t("settings.title")}</h2>
           <p className="text-sm font-medium text-text-muted mt-1">{t("settings.intro")}</p>
@@ -128,23 +138,38 @@ export function SettingsView() {
           <h3 className="text-base font-extrabold text-text -mb-1">
             {t("settings.keyboardLegend")}
           </h3>
-          <div className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              id="settings-keyboard-hints"
-              checked={showKeyboardHints}
-              onChange={(event) => dispatch(setShowKeyboardHints(event.target.checked))}
-              className="mt-1 accent-accent w-5 h-5 shrink-0"
-            />
-            <div className="flex flex-col">
-              <label
-                htmlFor="settings-keyboard-hints"
-                className="font-bold text-text cursor-pointer"
-              >
-                {t("settings.showHints")}
-              </label>
-              <p className="text-sm font-medium text-text-muted">{t("settings.showHintsHelp")}</p>
-            </div>
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="settings-keyboard-hints"
+              className="flex items-center gap-3 cursor-pointer font-bold text-text min-h-[44px] py-1"
+            >
+              <input
+                type="checkbox"
+                id="settings-keyboard-hints"
+                checked={showKeyboardHints}
+                aria-describedby="settings-keyboard-hints-help"
+                onChange={(event) => dispatch(setShowKeyboardHints(event.target.checked))}
+                className="accent-accent w-5 h-5 shrink-0"
+              />
+              <span>{t("settings.showHints")}</span>
+            </label>
+            <p id="settings-keyboard-hints-help" className="text-sm font-medium text-text-muted">
+              {t("settings.showHintsHelp")}
+            </p>
+          </div>
+        </section>
+
+        <section className={CARD_CLASS}>
+          <h3 className="text-base font-extrabold text-text -mb-1">{t("settings.guideLegend")}</h3>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium text-text-muted">{t("settings.replayHelp")}</p>
+            <button
+              type="button"
+              onClick={handleReplay}
+              className="self-start bg-accent text-accent-text rounded-pill px-5 py-2 text-sm font-bold shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all motion-reduce:transition-none min-h-[44px]"
+            >
+              {t("settings.replayTour")}
+            </button>
           </div>
         </section>
       </div>

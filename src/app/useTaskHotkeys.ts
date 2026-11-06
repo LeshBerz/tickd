@@ -40,6 +40,10 @@ export function useTaskHotkeys(): void {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // A modal tour owns the keyboard: single-key shortcuts would navigate behind it.
+      if (store.getState().guide.open) {
+        return;
+      }
       if (hasModifier(event) || isEditableTarget(event.target)) {
         return;
       }

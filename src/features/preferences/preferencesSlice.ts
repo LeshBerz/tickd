@@ -24,7 +24,15 @@ export const preferencesSlice = createSlice({
     setShowKeyboardHints(state, action: PayloadAction<boolean>) {
       state.showKeyboardHints = action.payload;
     },
+    /** Finishing or skipping the tour both count as "seen"; other preferences stay untouched. */
+    completeGuide(state) {
+      if (state.guideCompleted) {
+        return;
+      }
+      state.guideCompleted = true;
+    },
   },
 });
 
-export const { setTheme, setLanguage, setAccent, setShowKeyboardHints } = preferencesSlice.actions;
+export const { setTheme, setLanguage, setAccent, setShowKeyboardHints, completeGuide } =
+  preferencesSlice.actions;

@@ -58,7 +58,7 @@ export function TaskForm({ inputRef }: Props) {
   };
 
   return (
-    <form className="mb-6 relative" onSubmit={handleSubmit}>
+    <form className="mb-6 relative" data-guide="add-form" onSubmit={handleSubmit}>
       <label htmlFor={ADD_TASK_INPUT_ID} className="sr-only">
         {t("tasks.addLabel")}
       </label>

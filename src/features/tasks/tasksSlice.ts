@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { NOTES_MAX_LENGTH } from "./notes.ts";
+import { createSampleTasks, type SampleTaskKey } from "./samples.ts";
 import type { Task } from "./schema.ts";
 import { TITLE_MAX_LENGTH } from "./title.ts";
 
@@ -117,6 +118,25 @@ export const tasksSlice = createSlice({
         return { payload: { id, notes } };
       },
     },
+    /**
+     * Adds the starter tasks through the domain, so the listener persists them.
+     * Missing samples are appended in their canonical order; existing tasks are kept.
+     * A second call is a no-op (reference-stable state).
+     */
+    addSamples: {
+      reducer(state, action: PayloadAction<Task[]>) {
+        const incoming = action.payload.filter(
+          (task) => !state.items.some((item) => item.id === task.id),
+        );
+        if (incoming.length === 0) {
+          return;
+        }
+        state.items.push(...incoming);
+      },
+      prepare(titles: Readonly<Record<SampleTaskKey, string>>, now: number = Date.now()) {
+        return { payload: createSampleTasks(titles, now) };
+      },
+    },
   },
 });
 
@@ -129,4 +149,5 @@ export const {
   clearCompleted,
   updateTitle,
   updateNotes,
+  addSamples,
 } = tasksSlice.actions;

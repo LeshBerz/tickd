@@ -66,6 +66,7 @@ export function savePreferences(preferences: Preferences): SavePreferencesResult
         language: preferences.language,
         accent: preferences.accent,
         showKeyboardHints: preferences.showKeyboardHints,
+        guideCompleted: preferences.guideCompleted,
       }),
     );
     return "ok";

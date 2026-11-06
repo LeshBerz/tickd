@@ -4,8 +4,9 @@ import { useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import { selectShowKeyboardHints } from "../../preferences/selectShowKeyboardHints.ts";
 import { type Filter, taskPath } from "../filter.ts";
-import { selectTaskCounts, selectVisibleTasks } from "../selectors.ts";
+import { selectHasSampleTasks, selectTaskCounts, selectVisibleTasks } from "../selectors.ts";
 import { remove, toggle, updateTitle } from "../tasksSlice.ts";
+import { SampleTasksButton } from "./SampleTasksButton.tsx";
 import { TaskItem } from "./TaskItem.tsx";
 
 type Props = {
@@ -28,6 +29,7 @@ export function TaskList({ filter, addInputRef }: Props) {
   const { t } = useTranslation();
   const tasks = useAppSelector((state) => selectVisibleTasks(state, filter));
   const counts = useAppSelector(selectTaskCounts);
+  const hasSamples = useAppSelector(selectHasSampleTasks);
   const showKeyboardHints = useAppSelector(selectShowKeyboardHints);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -231,6 +233,7 @@ export function TaskList({ filter, addInputRef }: Props) {
         >
           {t("tasks.emptyFallback")}
         </p>
+        {hasSamples ? null : <SampleTasksButton />}
       </div>
     );
   }
@@ -246,7 +249,7 @@ export function TaskList({ filter, addInputRef }: Props) {
   }
 
   return (
-    <ul className="flex flex-col gap-3 pb-8 lg:pb-0">
+    <ul data-guide="task-list" className="stagger flex flex-col gap-3 pb-8 lg:pb-0">
       {tasks.map((task) => (
         <TaskItem
           key={task.id}

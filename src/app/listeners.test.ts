@@ -251,7 +251,7 @@ describe("preference persistence is separate from task persistence", () => {
 
     expect(localStorage.getItem("tickd:tasks")).toBeNull();
     expect(JSON.parse(localStorage.getItem(PREFERENCES_STORAGE_KEY) ?? "null")).toMatchObject({
-      version: 1,
+      version: 2,
       theme: "dark",
     });
   });

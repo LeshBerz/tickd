@@ -133,6 +133,35 @@ describe("detail panel content", () => {
     expect(within(panel()).getByRole("button", { name: "Back to list" })).toBeInTheDocument();
   });
 
+  test("keeps only the counter under the notes field", () => {
+    renderApp({ path: "/tasks/2", tasks: [task("2", { notes: "Short" })] });
+
+    const counter = within(panel()).getByText("5 / 2000");
+    expect(counter.parentElement?.textContent).toBe("5 / 2000");
+    // The counter is the only caption below the field.
+    expect(panel().querySelectorAll("p")).toHaveLength(1);
+  });
+
+  test("keeps only the counter under a capped notes field", () => {
+    const long = "line\n".repeat(150).slice(0, 2000);
+    renderApp({ path: "/tasks/2", tasks: [task("2", { notes: long })] });
+
+    const counter = within(panel()).getByText(`${long.length} / 2000`);
+    expect(counter.parentElement?.textContent).toBe(`${long.length} / 2000`);
+    expect(panel().querySelectorAll("p")).toHaveLength(1);
+  });
+
+  test("shows the same single counter in Russian", () => {
+    renderApp({
+      path: "/tasks/2",
+      tasks: [task("2", { notes: "Коротко" })],
+      preferences: { language: "ru" },
+    });
+
+    expect(within(panel()).getByText("7 / 2000")).toBeInTheDocument();
+    expect(panel().querySelectorAll("p")).toHaveLength(1);
+  });
+
   test("renders the panel landmark with an accessible name", () => {
     renderApp({ path: "/tasks/1", tasks: [task("1")] });
 

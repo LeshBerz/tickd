@@ -3,13 +3,16 @@ import { FALLBACK_LANGUAGE, LANGUAGES, type Language } from "./language.ts";
 import { ACCENTS, type Accent, DEFAULT_ACCENT } from "./palettes.ts";
 import { DEFAULT_THEME, THEMES, type ThemeMode } from "./theme.ts";
 
-export const PREFERENCES_STORAGE_VERSION = 1;
+export const PREFERENCES_STORAGE_VERSION = 2;
+export const LEGACY_PREFERENCES_STORAGE_VERSION = 1;
 
 export type Preferences = {
   theme: ThemeMode;
   language: Language;
   accent: Accent;
   showKeyboardHints: boolean;
+  /** The tour is "seen" once the user finishes or skips it. */
+  guideCompleted: boolean;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -17,17 +20,28 @@ export const DEFAULT_PREFERENCES: Preferences = {
   language: FALLBACK_LANGUAGE,
   accent: DEFAULT_ACCENT,
   showKeyboardHints: true,
+  guideCompleted: false,
 };
 
 export const PreferencesV1Schema = v.object({
-  version: v.literal(PREFERENCES_STORAGE_VERSION),
+  version: v.literal(LEGACY_PREFERENCES_STORAGE_VERSION),
   theme: v.picklist(THEMES),
   language: v.picklist(LANGUAGES),
   accent: v.picklist(ACCENTS),
   showKeyboardHints: v.boolean(),
 });
 
+export const PreferencesV2Schema = v.object({
+  version: v.literal(PREFERENCES_STORAGE_VERSION),
+  theme: v.picklist(THEMES),
+  language: v.picklist(LANGUAGES),
+  accent: v.picklist(ACCENTS),
+  showKeyboardHints: v.boolean(),
+  guideCompleted: v.boolean(),
+});
+
 export type StoredPreferencesV1 = v.InferOutput<typeof PreferencesV1Schema>;
+export type StoredPreferencesV2 = v.InferOutput<typeof PreferencesV2Schema>;
 
 function asRecord(raw: unknown): Record<string, unknown> | null {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
@@ -48,20 +62,38 @@ const AccentSchema = v.picklist(ACCENTS);
 /**
  * Any supported payload → preferences. Unknown versions and non-objects are rejected,
  * while individual fields fall back to defaults so one stale value cannot reset the rest.
+ * Version 1 payloads keep every stored value and simply start the tour again.
  */
 export function migratePreferences(raw: unknown): Preferences | null {
   const record = asRecord(raw);
-  if (record === null || record.version !== PREFERENCES_STORAGE_VERSION) {
+  if (record === null) {
     return null;
   }
 
-  const strict = v.safeParse(PreferencesV1Schema, record);
+  const version = record.version;
+  if (version !== PREFERENCES_STORAGE_VERSION && version !== LEGACY_PREFERENCES_STORAGE_VERSION) {
+    return null;
+  }
+
+  const strict = v.safeParse(PreferencesV2Schema, record);
   if (strict.success) {
     return {
       theme: strict.output.theme,
       language: strict.output.language,
       accent: strict.output.accent,
       showKeyboardHints: strict.output.showKeyboardHints,
+      guideCompleted: strict.output.guideCompleted,
+    };
+  }
+
+  const legacy = v.safeParse(PreferencesV1Schema, record);
+  if (legacy.success) {
+    return {
+      theme: legacy.output.theme,
+      language: legacy.output.language,
+      accent: legacy.output.accent,
+      showKeyboardHints: legacy.output.showKeyboardHints,
+      guideCompleted: false,
     };
   }
 
@@ -74,5 +106,6 @@ export function migratePreferences(raw: unknown): Preferences | null {
       record.showKeyboardHints,
       DEFAULT_PREFERENCES.showKeyboardHints,
     ),
+    guideCompleted: pick(v.boolean(), record.guideCompleted, DEFAULT_PREFERENCES.guideCompleted),
   };
 }

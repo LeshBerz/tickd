@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, settle, test } from "./fixtures.ts";
 
 type StoredTask = {
   id: string;
@@ -142,7 +143,40 @@ test("has no detectable accessibility violations on a detail route", async ({ pa
 
   for (const path of ["/tasks/a", "/completed/tasks/b"]) {
     await page.goto(path);
+    // The list and the panel fade in; axe must judge the settled colours.
+    await settle(page);
     const { violations } = await new AxeBuilder({ page }).analyze();
     expect(violations).toEqual([]);
   }
+});
+
+test("grows the notes field with the text and stops at the cap", async ({ page }) => {
+  await seedStoredTasks(page, 2, [{ id: "a", title: "Alpha", completed: false, createdAt: 1 }]);
+  await page.goto("/tasks/a");
+
+  const height = async () =>
+    (await notesField(page).boundingBox())?.height ?? Number.POSITIVE_INFINITY;
+
+  const start = await height();
+  await notesField(page).fill("one\ntwo\nthree");
+  const fewLines = await height();
+  expect(fewLines).toBeGreaterThanOrEqual(start);
+
+  await notesField(page).fill("line\n".repeat(80));
+  const manyLines = await height();
+  expect(manyLines).toBeGreaterThan(fewLines);
+
+  await notesField(page).fill("line\n".repeat(400));
+  const veryLong = await height();
+  // Growth stops at the cap instead of pushing the panel and the page.
+  // Sub-pixel layout rounding makes the two measurements differ by a fraction of a pixel.
+  expect(Math.abs(veryLong - manyLines)).toBeLessThan(1);
+  // The counter is the only caption under the field: no extra explanations.
+  await expect(page.getByText("2000 / 2000")).toBeVisible();
+  await expect(page.locator("textarea")).toHaveCSS("max-height", "420px");
+
+  // The capped field keeps its own scrollbar, so the whole note stays reachable.
+  await expect
+    .poll(async () => notesField(page).evaluate((el) => el.scrollHeight > el.clientHeight))
+    .toBe(true);
 });

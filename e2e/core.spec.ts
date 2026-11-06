@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, settle, test } from "./fixtures.ts";
 
 type SeedTask = {
   id: string;
@@ -161,6 +162,8 @@ test("has no detectable accessibility violations on populated routes", async ({ 
 
   for (const path of ["/", "/active", "/completed"]) {
     await page.goto(path);
+    // The rows fade in with a stagger; axe must judge the settled colours.
+    await settle(page);
     const { violations } = await new AxeBuilder({ page }).analyze();
     expect(violations).toEqual([]);
   }
@@ -168,6 +171,7 @@ test("has no detectable accessibility violations on populated routes", async ({ 
 
 test("has no detectable accessibility violations in the empty state", async ({ page }) => {
   await page.goto("/");
+  await settle(page);
 
   const { violations } = await new AxeBuilder({ page }).analyze();
 

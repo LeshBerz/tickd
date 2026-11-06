@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { DEFAULT_PREFERENCES } from "./schema.ts";
+import { DEFAULT_PREFERENCES, PREFERENCES_STORAGE_VERSION } from "./schema.ts";
 import { loadPreferences, PREFERENCES_STORAGE_KEY, savePreferences } from "./storage.ts";
 
 afterEach(() => {
@@ -16,6 +16,28 @@ describe("loadPreferences", () => {
     localStorage.setItem(
       PREFERENCES_STORAGE_KEY,
       JSON.stringify({
+        version: 2,
+        theme: "dark",
+        language: "ru",
+        accent: "rose",
+        showKeyboardHints: false,
+        guideCompleted: true,
+      }),
+    );
+
+    expect(loadPreferences()).toEqual({
+      theme: "dark",
+      language: "ru",
+      accent: "rose",
+      showKeyboardHints: false,
+      guideCompleted: true,
+    });
+  });
+
+  test("keeps every version 1 preference and restarts the tour", () => {
+    localStorage.setItem(
+      PREFERENCES_STORAGE_KEY,
+      JSON.stringify({
         version: 1,
         theme: "dark",
         language: "ru",
@@ -29,6 +51,7 @@ describe("loadPreferences", () => {
       language: "ru",
       accent: "rose",
       showKeyboardHints: false,
+      guideCompleted: false,
     });
   });
 
@@ -75,16 +98,19 @@ describe("savePreferences", () => {
       language: "ru",
       accent: "amber",
       showKeyboardHints: false,
+      guideCompleted: true,
     });
 
     expect(result).toBe("ok");
+    expect(PREFERENCES_STORAGE_VERSION).toBe(2);
     expect(localStorage.getItem(PREFERENCES_STORAGE_KEY)).toBe(
       JSON.stringify({
-        version: 1,
+        version: 2,
         theme: "light",
         language: "ru",
         accent: "amber",
         showKeyboardHints: false,
+        guideCompleted: true,
       }),
     );
     expect(localStorage.getItem("tickd:tasks")).toBeNull();
@@ -105,6 +131,7 @@ describe("savePreferences", () => {
       language: "ru" as const,
       accent: "blue" as const,
       showKeyboardHints: false,
+      guideCompleted: true,
     };
     savePreferences(preferences);
 

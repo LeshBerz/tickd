@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.ts";
 
 test("opens the app without console errors", async ({ page }) => {
   const errors: string[] = [];

@@ -15,3 +15,7 @@ export const selectAccent = (state: PreferencesSelectorState): Accent => state.p
 
 export const selectLanguage = (state: PreferencesSelectorState): Language =>
   state.preferences.language ?? FALLBACK_LANGUAGE;
+
+/** False only after the tour has been finished or skipped at least once. */
+export const selectGuideCompleted = (state: PreferencesSelectorState): boolean =>
+  state.preferences.guideCompleted;

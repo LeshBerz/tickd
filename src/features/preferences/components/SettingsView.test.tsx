@@ -78,7 +78,7 @@ describe("theme selection", () => {
     expect(document.documentElement).toHaveClass("dark");
     expect(checkedRadio("Theme").value).toBe("dark");
     expect(JSON.parse(localStorage.getItem("tickd:preferences") ?? "null")).toMatchObject({
-      version: 1,
+      version: 2,
       theme: "dark",
     });
   });
