@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import { openGuide } from "../../guide/guideSlice.ts";
 import { filterPaths } from "../../tasks/filter.ts";
@@ -59,8 +59,24 @@ export function SettingsView() {
 
   return (
     <div className="flex-1 lg:overflow-y-auto w-full lg:pl-16 xl:pl-24 lg:pr-8">
-      <div className="w-full max-w-[44rem] px-4 lg:px-0 py-6 lg:py-10 flex flex-col gap-6 stagger">
+      <div className="w-full max-w-[44rem] px-4 lg:px-0 pt-2 pb-6 lg:py-10 flex flex-col gap-6 stagger">
         <header>
+          <NavLink
+            to={filterPaths.all}
+            className="lg:hidden group/back flex w-fit items-center gap-2 -ml-2 mb-2 px-2 py-1.5 rounded-card text-sm font-bold text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors motion-reduce:transition-none min-h-[44px]"
+          >
+            <svg
+              className="w-4 h-4 transition-transform motion-reduce:transition-none group-hover/back:-translate-x-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            {t("settings.back")}
+          </NavLink>
           <h2 className="text-2xl font-extrabold text-text">{t("settings.title")}</h2>
           <p className="text-sm font-medium text-text-muted mt-1">{t("settings.intro")}</p>
         </header>

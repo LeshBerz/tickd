@@ -48,6 +48,25 @@ describe("settings route", () => {
     expect(screen.getAllByRole("link", { name: /^All/ }).length).toBeGreaterThan(0);
   });
 
+  test("links back to the task list from the settings page", async () => {
+    const { router, user } = renderApp({ path: "/settings", tasks: [] });
+
+    // The sidebar is the only other way out on desktop, so mobile gets its own back link.
+    const back = screen.getByRole("link", { name: "Back to tasks" });
+    expect(back).toHaveAttribute("href", "/");
+
+    await user.click(back);
+
+    expect(router.state.location.pathname).toBe("/");
+    expect(screen.getByRole("heading", { level: 2, name: "All tasks" })).toBeInTheDocument();
+  });
+
+  test("translates the settings back link", () => {
+    renderApp({ path: "/settings", preferences: { language: "ru" } });
+
+    expect(screen.getByRole("link", { name: "К задачам" })).toHaveAttribute("href", "/");
+  });
+
   test("does not render the task footer or the add form on settings", () => {
     renderApp({ path: "/settings", tasks: [] });
 

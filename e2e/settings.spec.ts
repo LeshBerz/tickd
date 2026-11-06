@@ -61,6 +61,25 @@ test("opens settings from the sidebar and exposes every preference", async ({ pa
   await expect(page.getByRole("checkbox", { name: "Show keyboard shortcut hints" })).toBeChecked();
 });
 
+test("returns from settings to the task list on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 780 });
+  await seedTasks(page);
+  await page.goto("/settings");
+
+  // The mobile header has no sidebar, so the back link is the only way out besides the browser.
+  const back = page.getByRole("link", { name: "Back to tasks" });
+  await expect(back).toBeVisible();
+
+  const box = await back.boundingBox();
+  expect(Math.round(box?.height ?? 0)).toBeGreaterThanOrEqual(44);
+
+  await back.click();
+
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("heading", { level: 2, name: "All tasks" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back to tasks" })).toHaveCount(0);
+});
+
 test("applies a dark theme, an accent palette, and survives a reload", async ({ page }) => {
   await page.goto("/settings");
 

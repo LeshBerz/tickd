@@ -77,6 +77,7 @@ export const ru: TranslationShape = {
   },
   settings: {
     title: "Настройки",
+    back: "К задачам",
     intro: "Настройки хранятся в этом браузере и применяются ко всему приложению.",
     appearance: "Оформление",
     themeLegend: "Тема",

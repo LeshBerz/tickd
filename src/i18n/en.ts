@@ -71,6 +71,7 @@ export const en = {
   },
   settings: {
     title: "Settings",
+    back: "Back to tasks",
     intro: "Preferences are stored in this browser and apply to the whole app.",
     appearance: "Appearance",
     themeLegend: "Theme",
