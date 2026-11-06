@@ -160,7 +160,8 @@ test("grows the notes field with the text and stops at the cap", async ({ page }
   const start = await height();
   await notesField(page).fill("one\ntwo\nthree");
   const fewLines = await height();
-  expect(fewLines).toBeGreaterThanOrEqual(start);
+  // Browser layout can differ by a fraction of a pixel between bounding-box reads.
+  expect(Math.abs(fewLines - start)).toBeLessThan(1);
 
   await notesField(page).fill("line\n".repeat(80));
   const manyLines = await height();

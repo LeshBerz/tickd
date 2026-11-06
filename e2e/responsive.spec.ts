@@ -281,7 +281,8 @@ test.describe("tap targets on mobile", () => {
             // A label makes its control clickable over the whole label area.
             const label = element.closest("label");
             const target = label === null ? rect : label.getBoundingClientRect();
-            if (target.width >= 44 && target.height >= 44) {
+            // CSS 44px targets can resolve to 43.99px after browser layout rounding.
+            if (target.width >= 43.5 && target.height >= 43.5) {
               continue;
             }
             out.push({

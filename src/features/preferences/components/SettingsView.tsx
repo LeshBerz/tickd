@@ -40,7 +40,7 @@ const SWATCH_CLASS: Record<Accent, string> = {
 const CARD_CLASS = "bg-card border border-border rounded-card p-4 lg:p-5 flex flex-col gap-4";
 const LEGEND_CLASS = "text-xs font-bold text-text-muted uppercase tracking-wider mb-3";
 const ROW_CLASS =
-  "flex items-center gap-3 px-3 py-2 rounded-card border-2 border-border-ui cursor-pointer font-bold text-text transition-colors motion-reduce:transition-none has-[:checked]:border-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring min-h-[44px]";
+  "flex items-center gap-3 px-3 py-2 rounded-card border-2 border-border-ui cursor-pointer font-bold text-text transition-colors motion-reduce:transition-none has-[:checked]:border-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring min-h-[44px] min-w-[44px]";
 
 export function SettingsView() {
   const { t } = useTranslation();
@@ -63,7 +63,7 @@ export function SettingsView() {
         <header>
           <NavLink
             to={filterPaths.all}
-            className="lg:hidden group/back flex w-fit items-center gap-2 -ml-2 mb-2 px-2 py-1.5 rounded-card text-sm font-bold text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors motion-reduce:transition-none min-h-[44px]"
+            className="lg:hidden group/back flex w-fit items-center gap-2 -ml-2 mb-2 px-2 py-1.5 rounded-card text-sm font-bold text-text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors motion-reduce:transition-none min-h-[44px] min-w-[44px]"
           >
             <svg
               className="w-4 h-4 transition-transform motion-reduce:transition-none group-hover/back:-translate-x-0.5"
@@ -182,7 +182,7 @@ export function SettingsView() {
             <button
               type="button"
               onClick={handleReplay}
-              className="self-start bg-accent text-accent-text rounded-pill px-5 py-2 text-sm font-bold shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all motion-reduce:transition-none min-h-[44px]"
+              className="self-start bg-accent text-accent-text rounded-pill px-5 py-2 text-sm font-bold shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all motion-reduce:transition-none min-h-[44px] min-w-[44px]"
             >
               {t("settings.replayTour")}
             </button>

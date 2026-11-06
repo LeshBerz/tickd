@@ -1,3 +1,4 @@
+import { createSelector } from "@reduxjs/toolkit";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import {
@@ -16,8 +17,10 @@ type BannerConfig = {
   dismiss: DismissKind;
 };
 
-function selectBanner(state: RootState): BannerConfig | null {
-  const { available, loadDiscarded, saveError, availabilityDismissed } = state.persistence;
+const selectPersistence = (state: RootState) => state.persistence;
+
+const selectBanner = createSelector([selectPersistence], (persistence): BannerConfig | null => {
+  const { available, loadDiscarded, saveError, availabilityDismissed } = persistence;
 
   if (saveError === "quota") {
     return { messageKey: "storage.quota", role: "alert", danger: true, dismiss: "save" };
@@ -37,7 +40,7 @@ function selectBanner(state: RootState): BannerConfig | null {
     };
   }
   return null;
-}
+});
 
 export function StorageBanner() {
   const { t } = useTranslation();
